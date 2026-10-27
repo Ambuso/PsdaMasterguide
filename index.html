@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
-<script>try{document.documentElement.dataset.theme=localStorage.getItem("theme")==="\"dark\""?"dark":"light"}catch(e){document.documentElement.dataset.theme="light"}</script>
+<script>try{document.documentElement.dataset.theme=localStorage.getItem("themeChoice")==="\"dark\""?"dark":"light"}catch(e){document.documentElement.dataset.theme="light"}</script>
 <title>Master Guide Examinations 2026</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -408,9 +408,9 @@ $("homeBtn").onclick = () => { $("result").hidden = true; $("start").hidden = fa
 const root = document.documentElement;
 const isDark = () => root.dataset.theme === "dark";
 function paintToggles(){ document.querySelectorAll("[data-theme-toggle]").forEach(b => { b.textContent = isDark() ? "Light mode" : "Dark mode"; b.setAttribute("aria-pressed", isDark()); }); }
-(function(){ root.dataset.theme = store.get("theme") === "dark" ? "dark" : "light"; })();
+(function(){ store.del("theme"); root.dataset.theme = store.get("themeChoice") === "dark" ? "dark" : "light"; })();
 document.querySelectorAll("[data-theme-toggle]").forEach(b => b.addEventListener("click", () => {
-  root.dataset.theme = isDark() ? "light" : "dark"; store.set("theme", root.dataset.theme); paintToggles();
+  root.dataset.theme = isDark() ? "light" : "dark"; store.set("themeChoice", root.dataset.theme); paintToggles();
 }));
 paintToggles();
 
