@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Master Guide Examinations 2026</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,500;7..72,700&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: one narrow exam column like a printed paper; sticky timer bar; sections as ruled blocks */
+:root{
+  --bg:#f5f7f9; --paper:#ffffff; --ink:#18212b; --muted:#5b6774; --rule:#d9e0e7;
+  --accent:#1d5c7a; --accent-ink:#ffffff; --accent-soft:#e3eef4;
+  --good:#1f7a4d; --warn:#9a5b00; --bad:#b3261e; --warn-soft:#fbf0dc;
+  --f-display:"Literata",Georgia,"Times New Roman",serif;
+  --f-body:"Public Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#11161c; --paper:#182029; --ink:#e7edf3; --muted:#9aa8b6; --rule:#2c3946;
+  --accent:#6fb3d2; --accent-ink:#0d1b24; --accent-soft:#1d3240;
+  --good:#5cc08c; --warn:#e2a64a; --bad:#f08a80; --warn-soft:#3a2d17; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#11161c; --paper:#182029; --ink:#e7edf3; --muted:#9aa8b6; --rule:#2c3946;
+  --accent:#6fb3d2; --accent-ink:#0d1b24; --accent-soft:#1d3240;
+  --good:#5cc08c; --warn:#e2a64a; --bad:#f08a80; --warn-soft:#3a2d17; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.55 var(--f-body);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 48px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--paper)}
+.wrap{max-width:720px;margin:0 auto}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0}
+h1{font-size:1.75rem;line-height:1.2}
+h2{font-size:1.2rem}
+.eyebrow{font:600 .75rem/1 var(--f-body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.muted{color:var(--muted)}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.btn{border:0;border-radius:8px;padding:12px 18px;font-weight:600;background:var(--accent);color:var(--accent-ink)}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.btn.ghost{background:transparent;color:var(--accent);border:1.5px solid var(--accent)}
+.theme-btn{border:1.5px solid var(--rule);background:var(--paper);color:var(--ink);border-radius:999px;padding:6px 12px;font-size:.85rem;font-weight:600;white-space:nowrap}
+.mast-top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+/* start */
+.masthead{padding-block:32px 20px;display:grid;gap:6px;border-bottom:2px solid var(--ink);margin-bottom:24px}
+.papers{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.paper-choice{display:grid;gap:4px;text-align:left;background:var(--paper);border:1.5px solid var(--rule);border-radius:10px;padding:16px}
+.paper-choice[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.paper-choice strong{font-family:var(--f-display);font-size:1.05rem}
+.paper-choice .done{color:var(--good);font-weight:600;font-size:.85rem}
+.field{display:grid;gap:6px}
+.field label{font-weight:600}
+.field input{border:1.5px solid var(--rule);border-radius:8px;padding:11px 12px;background:var(--paper)}
+.stack{display:grid;gap:18px}
+.rules{background:var(--paper);border:1px solid var(--rule);border-radius:10px;padding:16px 18px}
+.rules ul{margin:8px 0 0;padding-left:20px;display:grid;gap:4px}
+/* exam bar */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--paper);border-bottom:1px solid var(--rule);
+  margin-left:calc(-1 * max(16px,env(safe-area-inset-left,0px)));margin-right:calc(-1 * max(16px,env(safe-area-inset-right,0px)));
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:10px}
+.bar .wrap{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.bar .title{flex:1;min-width:0;font-weight:700;font-size:.9rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.clock{font:600 1.15rem/1 var(--f-mono);font-variant-numeric:tabular-nums;padding:6px 10px;border-radius:6px;background:var(--accent-soft)}
+.clock.low{background:var(--warn-soft);color:var(--warn)}
+.count{font:500 .85rem var(--f-mono);color:var(--muted)}
+/* sections */
+.section{margin-top:28px;display:grid;gap:14px}
+.section-head{border-bottom:1px solid var(--ink);padding-bottom:8px;display:grid;gap:2px}
+.q{background:var(--paper);border:1px solid var(--rule);border-radius:10px;padding:14px 16px;display:grid;gap:10px}
+.q.missing{border-color:var(--warn);box-shadow:0 0 0 2px var(--warn-soft)}
+.qtext{display:flex;gap:10px}
+.qn{font:600 .85rem/1.7 var(--f-mono);color:var(--muted);min-width:1.8em}
+.qtext span:last-child{min-width:0}
+.opts{display:grid;gap:6px;padding-left:2.6em}
+.opts.row{grid-template-columns:repeat(auto-fit,minmax(110px,1fr))}
+.opt{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border:1px solid var(--rule);border-radius:8px}
+.opt:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+.opt input{margin-top:4px;accent-color:var(--accent)}
+.q input[type=text]{margin-left:2.6em;width:calc(100% - 2.6em);border:1.5px solid var(--rule);border-radius:8px;padding:10px 12px;background:var(--bg)}
+.q select{margin-left:2.6em;width:calc(100% - 2.6em);border:1.5px solid var(--rule);border-radius:8px;padding:10px 12px;background:var(--bg);color:var(--ink);font:inherit}
+.submit-zone{margin-top:28px;display:grid;gap:12px;background:var(--paper);border:1px solid var(--rule);border-radius:10px;padding:18px}
+.confirm{display:grid;gap:10px;border-top:1px solid var(--rule);padding-top:12px}
+.actions{display:flex;gap:10px;flex-wrap:wrap}
+/* result */
+.result{padding-block:32px;display:grid;gap:20px}
+.score{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.score b{font:700 3.2rem/1 var(--f-display);font-variant-numeric:tabular-nums}
+.breakdown{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.breakdown div{background:var(--paper);border:1px solid var(--rule);border-radius:8px;padding:10px;display:grid;gap:2px;text-align:center}
+.breakdown span{font:600 1.2rem var(--f-mono);font-variant-numeric:tabular-nums}
+@media (max-width:420px){.breakdown{grid-template-columns:repeat(2,1fr)}}
+.msg{white-space:pre-wrap;font:.85rem/1.5 var(--f-mono);background:var(--paper);border:1px solid var(--rule);border-radius:8px;padding:12px;max-height:240px;overflow:auto;overflow-wrap:anywhere}
+.note{font-size:.9rem;color:var(--muted)}
+.wa{display:inline-block;text-decoration:none}
+@media (prefers-reduced-motion:no-preference){.q,.opt{transition:border-color .15s,background .15s}}
+</style>
+</head>
+<body>
+
+
+<div class="wrap" id="start">
+  <header class="masthead">
+    <div class="mast-top"><span class="eyebrow">Youth Ministries · Master Guide class</span><button class="theme-btn" type="button" data-theme-toggle>Dark mode</button></div>
+    <h1>Master Guide Examinations 2026</h1>
+    <span class="muted">Instructor: Ambuso Dismas</span>
+  </header>
+  <form class="stack" id="startForm" novalidate>
+    <div class="field">
+      <span style="font-weight:600">Choose your paper</span>
+      <div class="papers" id="papers"></div>
+    </div>
+    <div class="field">
+      <label for="cName">Full official name</label>
+      <input id="cName" autocomplete="name" placeholder="As registered with your local church" required>
+    </div>
+    <div class="field">
+      <label for="cChurch">Local church</label>
+      <input id="cChurch" placeholder="e.g. Parklands SDA" required>
+    </div>
+    <div class="rules">
+      <strong>General instructions</strong>
+      <ul>
+        <li>Attempt ALL questions. Each answer carries ONE mark (60 marks).</li>
+        <li>The paper has four sections: A – True or False, B – Multiple choice, C – Short answers, D – Matching.</li>
+        <li>You have ONE hour. When time runs out, your answers are submitted automatically.</li>
+        <li>No reference material of any kind is allowed. Cheating leads to disqualification.</li>
+        <li>After submitting, send your result to the instructor using the button on the results screen.</li>
+      </ul>
+    </div>
+    <p class="note" id="startErr" hidden></p>
+    <div><button class="btn" id="startBtn" type="submit">Start examination</button></div>
+  </form>
+</div>
+
+<div id="exam" hidden>
+  <div class="bar"><div class="wrap">
+    <span class="title" id="barTitle"></span>
+    <span class="count" id="answered"></span>
+    <span class="clock" id="clock" aria-live="off">60:00</span>
+    <button class="theme-btn" type="button" data-theme-toggle>Dark mode</button>
+  </div></div>
+  <div class="wrap">
+    <div id="sections"></div>
+    <div class="submit-zone">
+      <strong>Finished?</strong>
+      <span class="note">Check your answers before you submit. You cannot change them afterwards.</span>
+      <div><button class="btn" id="reviewBtn" type="button">Submit examination</button></div>
+      <div class="confirm" id="confirm" hidden>
+        <span id="confirmText"></span>
+        <div class="actions">
+          <button class="btn" id="confirmYes" type="button">Yes, submit now</button>
+          <button class="btn ghost" id="confirmNo" type="button">Go back to my answers</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap result" id="result" hidden>
+  <div class="stack">
+    <span class="eyebrow" id="rTitle"></span>
+    <h1 id="rName"></h1>
+    <div class="score"><b id="rScore"></b><span class="muted">out of 60</span><span class="muted" id="rPct"></span></div>
+    <div class="breakdown" id="rBreak"></div>
+    <p class="note" id="rAuto"></p>
+  </div>
+  <div class="stack">
+    <h2>Send your result to the instructor</h2>
+    <p class="note">Tap the button to open WhatsApp with your result written out, then choose the instructor’s chat and send it. If WhatsApp does not open, copy the result and paste it to the instructor.</p>
+    <div class="actions">
+      <a class="btn wa" id="waLink" href="#" target="_blank" rel="noopener">Send on WhatsApp</a>
+      <button class="btn ghost" id="copyBtn" type="button">Copy result</button>
+    </div>
+    <p class="note" id="copyMsg" hidden></p>
+    <div class="msg" id="rMsg"></div>
+  </div>
+  <div class="actions"><button class="btn ghost" id="homeBtn" type="button">Back to the paper list</button><button class="theme-btn" type="button" data-theme-toggle>Dark mode</button></div>
+</div>
+
+<script>
+const EXAMS = [{"id": "ch", "title": "Church Heritage Examination 2026", "sections": [{"type": "tf", "title": "Section A – True or False", "help": "Choose TRUE or FALSE for each statement. (15 marks)", "items": [{"q": "Martin Luther nailed his 95 theses to the door of the Wittenberg Castle Church on 31 October 1517", "k": "T"}, {"q": "John G. Paton is known as the father of modern missions", "k": "F"}, {"q": "Joseph Bates was a retired sea captain before he accepted the Advent message", "k": "T"}, {"q": "The Great Disappointment took place on 22 October 1843", "k": "F"}, {"q": "Rachel Oakes (Preston) introduced the seventh-day Sabbath to the Adventists at Washington, New Hampshire", "k": "T"}, {"q": "Hazen Foss accepted God’s call to be His messenger to the remnant church", "k": "F"}, {"q": "John Wycliffe is known as the “Morning Star of the Reformation”", "k": "T"}, {"q": "The great Lisbon earthquake took place in 1780", "k": "F"}, {"q": "The falling of the stars occurred on 13 November 1833", "k": "T"}, {"q": "Adoniram Judson served as a missionary in China", "k": "F"}, {"q": "The name “Seventh-day Adventist” was adopted in 1863", "k": "F"}, {"q": "J. N. Andrews was the first official overseas missionary of the Seventh-day Adventist Church", "k": "T"}, {"q": "Ellen Harmon was born in Gorham, Maine, in 1827", "k": "T"}, {"q": "Hiram Edson gained new light on Christ’s ministry in the heavenly sanctuary the morning after the Great Disappointment", "k": "T"}, {"q": "Ulrich Zwingli was a reformer in Germany during the time of Luther", "k": "F"}]}, {"type": "mcq", "title": "Section B – Multiple choice", "help": "Choose the correct answer A, B, C or D. (15 marks)", "items": [{"q": "How many theses did Martin Luther nail to the church door at Wittenberg?", "o": ["93", "95", "97", "99"], "k": "B"}, {"q": "Which reformer was burnt at the stake at the Council of Constance in 1415?", "o": ["John Wycliffe", "Martin Luther", "John Knox", "John Huss"], "k": "D"}, {"q": "The reformer whose preaching shook Scotland was", "o": ["John Knox", "John Calvin", "John Williams", "Philip Melanchthon"], "k": "A"}, {"q": "Who translated the Bible into Burmese?", "o": ["Robert Morrison", "William Carey", "David Livingstone", "Adoniram Judson"], "k": "D"}, {"q": "Who prepared an English–Chinese dictionary?", "o": ["Robert Morrison", "Adoniram Judson", "Robert Moffat", "John G. Paton"], "k": "A"}, {"q": "The first Adventist minister to accept the seventh-day Sabbath was", "o": ["Joseph Bates", "James White", "Frederick Wheeler", "Hiram Edson"], "k": "C"}, {"q": "Who wrote the tract “The Seventh Day Sabbath, a Perpetual Sign” in 1846?", "o": ["Uriah Smith", "J. N. Andrews", "Joseph Bates", "J. H. Waggoner"], "k": "C"}, {"q": "Where was the first General Conference session held in 1863?", "o": ["Battle Creek, Michigan", "Washington, New Hampshire", "Takoma Park, Maryland", "Boston, Massachusetts"], "k": "A"}, {"q": "Who was the first President of the General Conference?", "o": ["James White", "Joseph Bates", "John Byington", "Uriah Smith"], "k": "C"}, {"q": "How old was Ellen Harmon when she received her first vision in December 1844?", "o": ["15", "17", "19", "21"], "k": "B"}, {"q": "In which year was the Pathfinder Club officially accepted by the General Conference?", "o": ["1946", "1950", "1960", "1989"], "k": "B"}, {"q": "Who composed the Pathfinder song?", "o": ["Helen Hobbs", "John H. Hancock", "Henry T. Bergh", "M. E. Kern"], "k": "C"}, {"q": "Who designed the Pathfinder emblem?", "o": ["Helen Hobbs", "Henry T. Bergh", "Lawrence Skinner", "John H. Hancock"], "k": "D"}, {"q": "The Dark Day, one of the signs of the times, occurred in", "o": ["1755", "1780", "1798", "1833"], "k": "B"}, {"q": "Who was the first General Conference Youth (Missionary Volunteer) Director?", "o": ["H. T. Elliott", "Luther Warren", "Baraka Muganda", "M. E. Kern"], "k": "D"}]}, {"type": "short", "title": "Section C – Short answers", "help": "Type a short answer for each question. (15 marks)", "items": [{"q": "Who translated the New Testament from Greek into English and was executed in 1536?", "k": [["tyndale"]]}, {"q": "Which group kept the light of truth burning in the valleys of the Alps during the Dark Ages?", "k": [["walden", "vaudois"]]}, {"q": "What was the name of the ship that carried the Pilgrim Fathers to America in 1620?", "k": [["mayflower"]]}, {"q": "Who began preaching the Second Coming of Christ publicly in America in 1831?", "k": [["miller"]]}, {"q": "What was the name of the paper Joshua V. Himes began publishing in Boston in 1840?", "k": [["signs"]]}, {"q": "Which Bible text did William Miller use to calculate the end of the 2300 days?", "k": [["dan", "daniel"], ["8"], ["14"]]}, {"q": "What was the name of the paper James White began publishing in 1849?", "k": [["present truth"]]}, {"q": "In what year was the General Conference organised?", "k": [["1863"]]}, {"q": "Who wrote the book The Great Controversy?", "k": [["white", "ellen"]]}, {"q": "Who wrote the book Daniel and the Revelation?", "k": [["uriah", "smith"]]}, {"q": "To which country was J. N. Andrews sent as the first official overseas missionary?", "k": [["switzerland", "swiss"]]}, {"q": "What was the name of the first Adventist college, opened in 1874?", "k": [["battle creek"]]}, {"q": "Which church department is responsible for Adventurers, Pathfinders and Master Guides?", "k": [["youth"]]}, {"q": "Who made (sewed) the first Pathfinder flag?", "k": [["hobbs"]]}, {"q": "According to Revelation 14:12, what two things mark God’s remnant people?", "k": [["commandment"], ["faith"]]}]}, {"type": "match", "title": "Section D – Matching", "help": "Choose the year that matches each event. (15 marks)", "options": ["AD 1844", "AD 1915", "AD 538", "AD 1780", "AD 1874", "AD 1950", "AD 1517", "AD 1833", "AD 1863", "AD 1906", "AD 1798", "AD 1620", "AD 1888", "AD 1901", "AD 1755", "AD 1827", "AD 1846", "AD 2006", "AD 1831", "AD 1860"], "items": [{"q": "Martin Luther nails his 95 theses to the church door", "k": "AD 1517"}, {"q": "The Pilgrim Fathers sail to America on the Mayflower", "k": "AD 1620"}, {"q": "The great Lisbon earthquake", "k": "AD 1755"}, {"q": "The Dark Day", "k": "AD 1780"}, {"q": "End of the 1260-year prophecy; the pope is taken captive", "k": "AD 1798"}, {"q": "Birth of Ellen Harmon", "k": "AD 1827"}, {"q": "William Miller begins preaching publicly on the Second Coming", "k": "AD 1831"}, {"q": "The falling of the stars", "k": "AD 1833"}, {"q": "The Great Disappointment", "k": "AD 1844"}, {"q": "Joseph Bates publishes his Sabbath tract; James and Ellen White accept the Sabbath", "k": "AD 1846"}, {"q": "The name “Seventh-day Adventist” is adopted", "k": "AD 1860"}, {"q": "The first General Conference session is held", "k": "AD 1863"}, {"q": "Battle Creek College opens", "k": "AD 1874"}, {"q": "The Minneapolis General Conference session on righteousness by faith", "k": "AD 1888"}, {"q": "Ellen G. White dies", "k": "AD 1915"}]}]}, {"id": "bt", "title": "Bible Truths Examination 2026", "sections": [{"type": "tf", "title": "Section A – True or False", "help": "Choose TRUE or FALSE for each statement. (15 marks)", "items": [{"q": "The books of the Bible were written over a period of about 1,500 years.", "k": "T"}, {"q": "The Old Testament was written mainly in Hebrew, with some parts in Aramaic.", "k": "T"}, {"q": "The book of Acts was written by Moses.", "k": "F"}, {"q": "Salvation can be earned by good works.", "k": "F"}, {"q": "The seventh-day Sabbath was instituted at creation, before sin entered the world.", "k": "T"}, {"q": "At death the immortal soul goes straight to heaven or to hell.", "k": "F"}, {"q": "Christ is our High Priest after the order of Melchizedek.", "k": "T"}, {"q": "The papacy received its deadly wound in 1798.", "k": "T"}, {"q": "The righteous dead will be raised at the second coming of Christ.", "k": "T"}, {"q": "The wicked dead will be raised at the beginning of the millennium.", "k": "F"}, {"q": "The tithe is one tenth of our increase.", "k": "T"}, {"q": "The scapegoat (Azazel) on the Day of Atonement represented Christ.", "k": "F"}, {"q": "Baptism by immersion symbolises death to sin and rising to a new life in Christ.", "k": "T"}, {"q": "The Ten Commandments were abolished at the cross.", "k": "F"}, {"q": "During the millennium the redeemed will reign with Christ in heaven.", "k": "T"}]}, {"type": "mcq", "title": "Section B – Multiple choice", "help": "Choose the correct answer A, B, C or D. (15 marks)", "items": [{"q": "The three angels’ messages are found in", "o": ["Revelation 14:6–12", "Revelation 12:6–12", "Revelation 16:6–13", "Revelation 6:12–13"], "k": "A"}, {"q": "Which of the following was NOT in the Most Holy Place of the sanctuary?", "o": ["The ark of the covenant", "The mercy seat", "The altar of incense", "The tables of the law"], "k": "C"}, {"q": "The words of Jesus “The Sabbath was made for man” are found in", "o": ["Mark 2:27", "Matthew 2:28", "Luke 2:52", "John 3:16"], "k": "A"}, {"q": "About how old was Jesus when He was baptised?", "o": ["12 years", "20 years", "28 years", "30 years"], "k": "D"}, {"q": "In Daniel 8, the goat represents the kingdom of", "o": ["Medo-Persia", "Greece", "Rome", "Babylon"], "k": "B"}, {"q": "In Daniel 2, the head of gold represents", "o": ["Babylon", "Medo-Persia", "Greece", "Rome"], "k": "A"}, {"q": "Which commandment contains the seal of God?", "o": ["The first", "The second", "The tenth", "The fourth"], "k": "D"}, {"q": "The 2300-day prophecy of Daniel 8:14 ended in", "o": ["1798", "1844", "538", "1863"], "k": "B"}, {"q": "The first promise of a Saviour is found in", "o": ["Genesis 1:1", "Genesis 3:15", "Isaiah 53:5", "John 3:16"], "k": "B"}, {"q": "In Bible prophecy, a beast represents", "o": ["A king or kingdom", "A church", "A prophet", "A period of time"], "k": "A"}, {"q": "Which tribe is missing from the list of the 144,000 sealed in Revelation 7?", "o": ["Reuben", "Dan", "Benjamin", "Judah"], "k": "B"}, {"q": "In the ordinance of humility, foot washing symbolises", "o": ["Humility and cleansing from sin", "The blood of Christ", "The body of Christ", "The new birth"], "k": "A"}, {"q": "“If we confess our sins, he is faithful and just to forgive us our sins” is found in", "o": ["1 John 1:9", "Romans 6:23", "John 14:15", "Psalm 51:10"], "k": "A"}, {"q": "In prophetic time, one day stands for", "o": ["A week", "A month", "A year", "A thousand years"], "k": "C"}, {"q": "Which of the following is NOT a Bible test of a true prophet?", "o": ["Their predictions come to pass", "Their message agrees with the law and the testimony", "They perform miracles and healing", "They confess that Jesus Christ has come in the flesh"], "k": "C"}]}, {"type": "short", "title": "Section C – Short answers", "help": "Type a short answer for each question. (15 marks)", "items": [{"q": "What is the second angel’s message?", "k": [["babylon"], ["fall"]]}, {"q": "Which Bible text says “To the law and to the testimony: if they speak not according to this word, it is because there is no light in them”?", "k": [["isaiah", "isa"], ["8"], ["20"]]}, {"q": "Who is the Comforter that Jesus promised in John 14?", "k": [["spirit", "ghost"]]}, {"q": "According to Revelation 19:10, what is the testimony of Jesus?", "k": [["prophecy", "prophet"]]}, {"q": "Name the two goats used on the Day of Atonement.", "k": [["lord"], ["scape", "azazel"]]}, {"q": "How many years will pass between the first and the second resurrection?", "k": [["1000", "thousand", "millennium"]]}, {"q": "When does the Sabbath begin and end?", "k": [["sunset", "sundown", "evening"], ["friday"]]}, {"q": "What does water symbolise in Bible prophecy (Revelation 17:15)?", "k": [["people", "nation", "multitude", "tongue", "language"]]}, {"q": "From which Greek word does the name “Bible” come, and what does it mean?", "k": [["biblia", "biblos", "book"]]}, {"q": "According to 1 Corinthians 15:26, what is the last enemy that will be destroyed?", "k": [["death"]]}, {"q": "Which book and chapter contain Nebuchadnezzar’s dream of the great image?", "k": [["daniel", "dan"], ["2"]]}, {"q": "Name the three things God did to the seventh day in Genesis 2:1–3.", "k": [["rest"], ["bless"], ["sanctif", "holy", "hallow"]]}, {"q": "Who baptised Jesus, and in which river?", "k": [["john"], ["jordan"]]}, {"q": "Which text says “Thy word is a lamp unto my feet, and a light unto my path”?", "k": [["psalm", "ps", "psalms"], ["119"], ["105"]]}, {"q": "According to Revelation 12:17, what are the two marks of the remnant?", "k": [["commandment"], ["testimony", "spirit of prophecy"]]}]}, {"type": "match", "title": "Section D – Matching", "help": "Choose the Bible text that teaches each subject. (15 marks)", "options": ["A. Exodus 20:8–11", "B. 1 Timothy 2:5", "C. 1 Corinthians 12:4", "D. John 14:15", "E. Matthew 28:19–20", "F. Romans 6:23", "G. Ecclesiastes 9:5", "H. 2 Timothy 3:16", "I. 1 Corinthians 11:23–26", "J. Hebrews 7:25", "K. Genesis 1:1", "L. Matthew 6:33", "M. Daniel 8:14", "N. 1 Thessalonians 4:16–17", "O. Malachi 3:10"], "items": [{"q": "The Sabbath", "k": "A. Exodus 20:8–11"}, {"q": "Tithe and offerings", "k": "O. Malachi 3:10"}, {"q": "Spiritual gifts", "k": "C. 1 Corinthians 12:4"}, {"q": "The Lord’s Supper", "k": "I. 1 Corinthians 11:23–26"}, {"q": "The wages of sin", "k": "F. Romans 6:23"}, {"q": "The Second Coming", "k": "N. 1 Thessalonians 4:16–17"}, {"q": "Inspiration of Scripture", "k": "H. 2 Timothy 3:16"}, {"q": "The state of the dead", "k": "G. Ecclesiastes 9:5"}, {"q": "The cleansing of the sanctuary", "k": "M. Daniel 8:14"}, {"q": "Christ the only mediator", "k": "B. 1 Timothy 2:5"}, {"q": "Creation", "k": "K. Genesis 1:1"}, {"q": "Obedience as the proof of love", "k": "D. John 14:15"}, {"q": "Seek first the kingdom of God", "k": "L. Matthew 6:33"}, {"q": "The great commission", "k": "E. Matthew 28:19–20"}, {"q": "Christ able to save to the uttermost", "k": "J. Hebrews 7:25"}]}]}];
+const DURATION = 60 * 60; // seconds
+const $ = id => document.getElementById(id);
+const store = {
+  get(k){ try { return JSON.parse(localStorage.getItem(k)); } catch(e){ return null; } },
+  set(k,v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} },
+  del(k){ try { localStorage.removeItem(k); } catch(e){} }
+};
+let chosen = null, session = null, tick = null;
+
+function shuffled(arr, seed){
+  const a = arr.map((v,i)=>i); let s = seed;
+  for (let i=a.length-1;i>0;i--){ s=(s*9301+49297)%233280; const j=Math.floor(s/233280*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+  return a;
+}
+function norm(t){ return (t||"").toLowerCase().replace(/(\d),(\d)/g,"$1$2").replace(/[’']/g,"").replace(/[^a-z0-9]+/g," ").trim(); }
+function shortCorrect(answer, groups){
+  const t = " " + norm(answer) + " ";
+  return groups.every(g => g.some(alt => {
+    const a = norm(alt);
+    const re = /^\d+$/.test(a) ? new RegExp("\\b"+a+"\\b") : new RegExp("\\b"+a.replace(/ /g,"\\s+"));
+    return re.test(t);
+  }));
+}
+
+/* ── start screen ── */
+function renderPapers(){
+  const box = $("papers"); box.innerHTML = "";
+  EXAMS.forEach(ex => {
+    const done = store.get("done:"+ex.id);
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "paper-choice"; b.setAttribute("aria-pressed", chosen===ex.id ? "true":"false");
+    b.innerHTML = `<strong></strong><span class="muted">60 questions · 1 hour</span>${done?'<span class="done">Already submitted on this device</span>':''}`;
+    b.querySelector("strong").textContent = ex.title;
+    b.onclick = () => { chosen = ex.id; renderPapers(); };
+    box.appendChild(b);
+  });
+}
+$("startForm").addEventListener("submit", e => {
+  e.preventDefault();
+  const name = $("cName").value.trim(), church = $("cChurch").value.trim(), err = $("startErr");
+  if (!chosen){ err.textContent = "Choose a paper first."; err.hidden = false; return; }
+  if (!name || !church){ err.textContent = "Enter your full name and your local church."; err.hidden = false; return; }
+  err.hidden = true;
+  const prior = store.get("session:"+chosen);
+  session = (prior && !prior.submitted && prior.name===name) ? prior
+    : { exam: chosen, name, church, started: Date.now(), seed: Math.floor(Math.random()*100000)+1, answers: {} };
+  store.set("session:"+chosen, session);
+  openExam();
+});
+
+/* ── exam screen ── */
+function openExam(){
+  const ex = EXAMS.find(x=>x.id===session.exam);
+  $("start").hidden = true; $("result").hidden = true; $("exam").hidden = false;
+  $("barTitle").textContent = ex.title;
+  const wrap = $("sections"); wrap.innerHTML = "";
+  ex.sections.forEach((s, si) => {
+    const sec = document.createElement("section"); sec.className = "section";
+    sec.innerHTML = `<div class="section-head"><h2></h2><span class="note"></span></div>`;
+    sec.querySelector("h2").textContent = s.title;
+    sec.querySelector(".note").textContent = s.help;
+    shuffled(s.items, session.seed + si*31).forEach((idx, pos) => {
+      const it = s.items[idx], key = `${si}-${idx}`;
+      const q = document.createElement("div"); q.className = "q"; q.dataset.key = key;
+      q.innerHTML = `<div class="qtext"><span class="qn">${pos+1}.</span><span></span></div>`;
+      q.querySelector(".qtext span:last-child").textContent = it.q;
+      const saved = session.answers[key];
+      if (s.type === "short"){
+        const inp = document.createElement("input"); inp.type="text"; inp.id="a-"+key; inp.autocomplete="off";
+        inp.setAttribute("aria-label", "Answer to question "+(pos+1));
+        inp.value = saved || "";
+        inp.oninput = () => setAnswer(key, inp.value);
+        q.appendChild(inp);
+      } else if (s.type === "match"){
+        const sel = document.createElement("select"); sel.id="a-"+key;
+        sel.setAttribute("aria-label", "Answer to question "+(pos+1));
+        sel.innerHTML = `<option value="">Choose…</option>`;
+        s.options.forEach(o => { const op=document.createElement("option"); op.value=o; op.textContent=o; sel.appendChild(op); });
+        sel.value = saved || "";
+        sel.onchange = () => setAnswer(key, sel.value);
+        q.appendChild(sel);
+      } else {
+        const opts = document.createElement("div"); opts.className = "opts" + (s.type==="tf" ? " row":"");
+        const list = s.type==="tf" ? ["True","False"] : it.o.map((o,j)=>"ABCD"[j]+". "+o);
+        list.forEach((o,j) => {
+          const val = s.type==="tf" ? (j===0?"T":"F") : "ABCD"[j];
+          const lab = document.createElement("label"); lab.className="opt";
+          lab.innerHTML = `<input type="radio" name="r-${key}" id="a-${key}-${val}" value="${val}"><span></span>`;
+          lab.querySelector("span").textContent = o;
+          const r = lab.querySelector("input"); r.checked = saved===val;
+          r.onchange = () => setAnswer(key, val);
+          opts.appendChild(lab);
+        });
+        q.appendChild(opts);
+      }
+      sec.appendChild(q);
+    });
+    wrap.appendChild(sec);
+  });
+  updateCount(); startClock(); window.scrollTo(0,0);
+}
+function setAnswer(key, val){
+  session.answers[key] = val; store.set("session:"+session.exam, session); updateCount();
+  const q = document.querySelector(`.q[data-key="${key}"]`); if (q && String(val).trim()) q.classList.remove("missing");
+}
+function answeredCount(){ return Object.values(session.answers).filter(v=>String(v||"").trim()).length; }
+function updateCount(){ $("answered").textContent = answeredCount()+"/60 answered"; }
+function startClock(){
+  clearInterval(tick);
+  const draw = () => {
+    const left = Math.max(0, DURATION - Math.floor((Date.now()-session.started)/1000));
+    const m = Math.floor(left/60), s = left%60;
+    $("clock").textContent = String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+    $("clock").classList.toggle("low", left <= 300);
+    if (left === 0){ clearInterval(tick); finish(true); }
+  };
+  draw(); tick = setInterval(draw, 1000);
+}
+$("reviewBtn").onclick = () => {
+  const missing = [...document.querySelectorAll(".q")].filter(q => !String(session.answers[q.dataset.key]||"").trim());
+  missing.forEach(q=>q.classList.add("missing"));
+  $("confirmText").textContent = missing.length
+    ? `You have ${missing.length} unanswered question${missing.length>1?"s":""} (highlighted). Submit anyway?`
+    : "All 60 questions answered. Submit your examination?";
+  $("confirm").hidden = false; $("confirmYes").focus();
+};
+$("confirmNo").onclick = () => { $("confirm").hidden = true; const m=document.querySelector(".q.missing"); if(m) m.scrollIntoView({block:"center"}); };
+$("confirmYes").onclick = () => finish(false);
+
+/* ── marking ── */
+function mark(){
+  const ex = EXAMS.find(x=>x.id===session.exam);
+  return ex.sections.map((s, si) => {
+    let got = 0;
+    s.items.forEach((it, idx) => {
+      const a = session.answers[`${si}-${idx}`];
+      if (s.type==="short"){ if (shortCorrect(a, it.k)) got++; }
+      else if (a === it.k) got++;
+    });
+    return got;
+  });
+}
+function finish(timedOut){
+  clearInterval(tick);
+  const ex = EXAMS.find(x=>x.id===session.exam);
+  const parts = mark(), total = parts.reduce((a,b)=>a+b,0);
+  const used = Math.min(60, Math.ceil((Date.now()-session.started)/60000));
+  session.submitted = true; session.score = total; store.set("session:"+session.exam, session);
+  store.set("done:"+session.exam, true);
+  const shortAns = ex.sections[2].items.map((it,idx)=>`C${idx+1}. ${(session.answers["2-"+idx]||"—").trim()}`).join("\n");
+  const when = new Date().toLocaleString("en-GB",{dateStyle:"medium",timeStyle:"short"});
+  const msg = `${ex.title}\nName: ${session.name}\nChurch: ${session.church}\nScore: ${total}/60 (A ${parts[0]}/15, B ${parts[1]}/15, C ${parts[2]}/15, D ${parts[3]}/15)\nSubmitted: ${when}${timedOut?" (time ran out)":""} · Time used: ${used} min\n\nSection C answers:\n${shortAns}`;
+  $("exam").hidden = true; $("result").hidden = false;
+  $("rTitle").textContent = ex.title + (timedOut ? " · Time is up, answers submitted" : " · Submitted");
+  $("rName").textContent = session.name;
+  $("rScore").textContent = total;
+  $("rPct").textContent = Math.round(total/60*100)+"%";
+  $("rBreak").innerHTML = "";
+  ["A · True/False","B · Multiple choice","C · Short answers","D · Matching"].forEach((l,i)=>{
+    const d=document.createElement("div"); d.innerHTML=`<span class="eyebrow"></span><span></span>`;
+    d.children[0].textContent=l; d.children[1].textContent=parts[i]+"/15"; $("rBreak").appendChild(d);
+  });
+  $("rAuto").textContent = "Short answers (Section C) are marked automatically from key words. The instructor checks them and may adjust your final mark.";
+  $("rMsg").textContent = msg;
+  $("waLink").href = "https://wa.me/?text=" + encodeURIComponent(msg);
+  $("copyBtn").onclick = () => {
+    const done = t => { $("copyMsg").textContent = t; $("copyMsg").hidden = false; };
+    navigator.clipboard.writeText(msg).then(()=>done("Result copied. Paste it into your message to the instructor."), ()=>{
+      const r=document.createRange(); r.selectNodeContents($("rMsg")); const s=getSelection(); s.removeAllRanges(); s.addRange(r);
+      done("Your result is selected. Copy it and paste it to the instructor.");
+    });
+  };
+  window.scrollTo(0,0);
+}
+$("homeBtn").onclick = () => { $("result").hidden = true; $("start").hidden = false; chosen = null; renderPapers(); };
+
+/* ── light / dark switch ── */
+const root = document.documentElement;
+const isDark = () => root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+function paintToggles(){ document.querySelectorAll("[data-theme-toggle]").forEach(b => { b.textContent = isDark() ? "Light mode" : "Dark mode"; b.setAttribute("aria-pressed", isDark()); }); }
+(function(){ const saved = store.get("theme"); if (saved === "dark" || saved === "light") root.dataset.theme = saved; })();
+document.querySelectorAll("[data-theme-toggle]").forEach(b => b.addEventListener("click", () => {
+  root.dataset.theme = isDark() ? "light" : "dark"; store.set("theme", root.dataset.theme); paintToggles();
+}));
+try { matchMedia("(prefers-color-scheme: dark)").addEventListener("change", paintToggles); } catch(e){}
+paintToggles();
+
+renderPapers();
+</script>
+
+</body>
+</html>
