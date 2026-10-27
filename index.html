@@ -51,6 +51,10 @@ button{cursor:pointer}
 .field{display:grid;gap:6px}
 .field label{font-weight:600}
 .field input{border:1.5px solid var(--rule);border-radius:8px;padding:11px 12px;background:var(--paper)}
+.field input[aria-invalid="true"]{border-color:var(--bad);box-shadow:0 0 0 2px color-mix(in srgb,var(--bad) 20%,transparent)}
+.req{font-weight:500;font-size:.8rem;color:var(--bad)}
+.field-err{color:var(--bad);font-size:.85rem;margin:0}
+#startErr{color:var(--bad);font-weight:600}
 .stack{display:grid;gap:18px}
 .rules{background:var(--paper);border:1px solid var(--rule);border-radius:10px;padding:16px 18px}
 .rules ul{margin:8px 0 0;padding-left:20px;display:grid;gap:4px}
@@ -113,16 +117,19 @@ button{cursor:pointer}
       <div class="papers" id="papers"></div>
     </div>
     <div class="field">
-      <label for="cName">Full official name</label>
+      <label for="cName">Full official name <span class="req">*required</span></label>
       <input id="cName" autocomplete="name" placeholder="As registered with your local church" required>
+      <p class="field-err" id="cNameErr" hidden></p>
     </div>
     <div class="field">
-      <label for="cEmail">Email address</label>
+      <label for="cEmail">Email address <span class="req">*required</span></label>
       <input id="cEmail" type="email" autocomplete="email" inputmode="email" placeholder="Your results will be sent here" required>
+      <p class="field-err" id="cEmailErr" hidden></p>
     </div>
     <div class="field">
-      <label for="cChurch">Local church</label>
+      <label for="cChurch">Local church <span class="req">*required</span></label>
       <input id="cChurch" placeholder="e.g. Parklands SDA" required>
+      <p class="field-err" id="cChurchErr" hidden></p>
     </div>
     <div class="rules">
       <strong>General instructions</strong>
@@ -226,15 +233,34 @@ function renderPapers(){
     box.appendChild(b);
   });
 }
+function fieldError(id, msg){
+  const inp = $(id), el = $(id+"Err");
+  inp.setAttribute("aria-invalid", msg ? "true" : "false");
+  el.textContent = msg || ""; el.hidden = !msg;
+  return !msg;
+}
+["cName","cEmail","cChurch"].forEach(id => $(id).addEventListener("input", () => { if ($(id).getAttribute("aria-invalid")==="true") fieldError(id, ""); }));
 $("startForm").addEventListener("submit", e => {
   e.preventDefault();
-  const name = $("cName").value.trim(), church = $("cChurch").value.trim(), email = $("cEmail").value.trim(), err = $("startErr");
-  if (!chosen){ err.textContent = "Choose a paper first."; err.hidden = false; return; }
-  if (!name || !church){ err.textContent = "Enter your full name and your local church."; err.hidden = false; return; }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ err.textContent = "Enter a valid email address, for example name@gmail.com. Your results will be sent there."; err.hidden = false; return; }
+  const name = $("cName").value.trim().replace(/\s+/g," ");
+  const email = $("cEmail").value.trim().toLowerCase();
+  const church = $("cChurch").value.trim().replace(/\s+/g," ");
+  const err = $("startErr");
+  const okName = fieldError("cName", name.length < 3 ? "Enter your full official name." : "");
+  const okEmail = fieldError("cEmail", !email ? "Enter your email address. Your results will be sent there."
+    : !/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(email) ? "This email address is not valid. Check it, for example name@gmail.com." : "");
+  const okChurch = fieldError("cChurch", church.length < 3 ? "Enter the name of your local church, for example Parklands SDA." : "");
+  if (!chosen || !okName || !okEmail || !okChurch){
+    err.textContent = !chosen ? "Choose a paper first." : "You cannot start until your name, email address and local church are filled in correctly.";
+    err.hidden = false;
+    const first = ["cName","cEmail","cChurch"].find(id => $(id).getAttribute("aria-invalid")==="true");
+    if (first) $(first).focus();
+    return;
+  }
   err.hidden = true;
   const prior = store.get("session:"+chosen);
-  session = (prior && !prior.submitted && prior.name===name) ? prior
+  session = (prior && !prior.submitted && prior.name===name)
+    ? Object.assign(prior, { email, church })
     : { exam: chosen, name, church, email, started: Date.now(), seed: Math.floor(Math.random()*100000)+1, answers: {} };
   store.set("session:"+chosen, session);
   openExam();
