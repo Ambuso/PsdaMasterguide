@@ -116,6 +116,10 @@ button{cursor:pointer}
       <input id="cName" autocomplete="name" placeholder="As registered with your local church" required>
     </div>
     <div class="field">
+      <label for="cEmail">Email address</label>
+      <input id="cEmail" type="email" autocomplete="email" inputmode="email" placeholder="Your results will be sent here" required>
+    </div>
+    <div class="field">
       <label for="cChurch">Local church</label>
       <input id="cChurch" placeholder="e.g. Parklands SDA" required>
     </div>
@@ -126,7 +130,7 @@ button{cursor:pointer}
         <li>The paper has four sections: A – True or False, B – Multiple choice, C – Short answers, D – Matching.</li>
         <li>You have 45 MINUTES. When time runs out, your answers are submitted automatically.</li>
         <li>No reference material of any kind is allowed. Cheating leads to disqualification.</li>
-        <li>After submitting, send your result to the instructor using the button on the results screen.</li>
+        <li>After you submit, your result goes to the instructor and a copy is emailed to you.</li>
       </ul>
     </div>
     <p class="note" id="startErr" hidden></p>
@@ -223,13 +227,14 @@ function renderPapers(){
 }
 $("startForm").addEventListener("submit", e => {
   e.preventDefault();
-  const name = $("cName").value.trim(), church = $("cChurch").value.trim(), err = $("startErr");
+  const name = $("cName").value.trim(), church = $("cChurch").value.trim(), email = $("cEmail").value.trim(), err = $("startErr");
   if (!chosen){ err.textContent = "Choose a paper first."; err.hidden = false; return; }
   if (!name || !church){ err.textContent = "Enter your full name and your local church."; err.hidden = false; return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ err.textContent = "Enter a valid email address, for example name@gmail.com. Your results will be sent there."; err.hidden = false; return; }
   err.hidden = true;
   const prior = store.get("session:"+chosen);
   session = (prior && !prior.submitted && prior.name===name) ? prior
-    : { exam: chosen, name, church, started: Date.now(), seed: Math.floor(Math.random()*100000)+1, answers: {} };
+    : { exam: chosen, name, church, email, started: Date.now(), seed: Math.floor(Math.random()*100000)+1, answers: {} };
   store.set("session:"+chosen, session);
   openExam();
 });
@@ -335,7 +340,7 @@ function finish(timedOut){
   store.set("done:"+session.exam, true);
   const shortAns = ex.sections[2].items.map((it,idx)=>`C${idx+1}. ${(session.answers["2-"+idx]||"—").trim()}`).join("\n");
   const when = new Date().toLocaleString("en-GB",{dateStyle:"medium",timeStyle:"short"});
-  const msg = `${ex.title}\nName: ${session.name}\nChurch: ${session.church}\nScore: ${total}/60 (A ${parts[0]}/15, B ${parts[1]}/15, C ${parts[2]}/15, D ${parts[3]}/15)\nSubmitted: ${when}${timedOut?" (time ran out)":""} · Time used: ${used} min\n\nSection C answers:\n${shortAns}`;
+  const msg = `${ex.title}\nName: ${session.name}\nChurch: ${session.church}\nEmail: ${session.email||"—"}\nScore: ${total}/60 (A ${parts[0]}/15, B ${parts[1]}/15, C ${parts[2]}/15, D ${parts[3]}/15)\nSubmitted: ${when}${timedOut?" (time ran out)":""} · Time used: ${used} min\n\nSection C answers:\n${shortAns}`;
   $("exam").hidden = true; $("result").hidden = false;
   $("rTitle").textContent = ex.title + (timedOut ? " · Time is up, answers submitted" : " · Submitted");
   $("rName").textContent = session.name;
@@ -351,7 +356,7 @@ function finish(timedOut){
   const allAnswers = ex.sections.map((sec,si)=>sec.items.map((it,idx)=>`${"ABCD"[si]}${idx+1}:${String(session.answers[`${si}-${idx}`]||"-").trim()}`).join(" ")).join(" | ");
   const sent = queueResult({
     attemptId: session.exam + "-" + session.started + "-" + session.seed,
-    exam: ex.title, name: session.name, church: session.church, total, parts,
+    exam: ex.title, name: session.name, church: session.church, email: session.email || "", total, parts,
     minutes: used, timedOut: !!timedOut,
     shortAnswers: ex.sections[2].items.map((it,idx)=>String(session.answers["2-"+idx]||"").trim()),
     allAnswers
@@ -404,7 +409,7 @@ async function flushPending(showStatus){
   store.set("pending", left);
   if (showStatus){
     if (left.length) setStatus("wait", "Your result could not be sent yet because the connection failed. Keep this page open with internet on and it will retry, or send it on WhatsApp below.");
-    else setStatus("ok", "✓ Your result has been sent to the instructor. You can close this page.");
+    else setStatus("ok", "✓ Your result has been sent to the instructor, and a copy is on its way to your email. You can close this page.");
   }
 }
 function queueResult(p){
