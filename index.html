@@ -18,10 +18,6 @@
   --f-body:"Public Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
 }
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#11161c; --paper:#182029; --ink:#e7edf3; --muted:#9aa8b6; --rule:#2c3946;
-  --accent:#6fb3d2; --accent-ink:#0d1b24; --accent-soft:#1d3240;
-  --good:#5cc08c; --warn:#e2a64a; --bad:#f08a80; --warn-soft:#3a2d17; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#11161c; --paper:#182029; --ink:#e7edf3; --muted:#9aa8b6; --rule:#2c3946;
   --accent:#6fb3d2; --accent-ink:#0d1b24; --accent-soft:#1d3240;
@@ -360,13 +356,12 @@ $("homeBtn").onclick = () => { $("result").hidden = true; $("start").hidden = fa
 
 /* ── light / dark switch ── */
 const root = document.documentElement;
-const isDark = () => root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+const isDark = () => root.dataset.theme === "dark";
 function paintToggles(){ document.querySelectorAll("[data-theme-toggle]").forEach(b => { b.textContent = isDark() ? "Light mode" : "Dark mode"; b.setAttribute("aria-pressed", isDark()); }); }
 (function(){ const saved = store.get("theme"); if (saved === "dark" || saved === "light") root.dataset.theme = saved; })();
 document.querySelectorAll("[data-theme-toggle]").forEach(b => b.addEventListener("click", () => {
   root.dataset.theme = isDark() ? "light" : "dark"; store.set("theme", root.dataset.theme); paintToggles();
 }));
-try { matchMedia("(prefers-color-scheme: dark)").addEventListener("change", paintToggles); } catch(e){}
 paintToggles();
 
 renderPapers();
