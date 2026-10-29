@@ -47,6 +47,7 @@ button{cursor:pointer}
 .paper-choice{display:grid;gap:4px;text-align:left;background:var(--paper);border:1.5px solid var(--rule);border-radius:10px;padding:16px}
 .paper-choice[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
 .paper-choice strong{font-family:var(--f-display);font-size:1.05rem}
+.paper-choice[disabled]{opacity:.6;cursor:not-allowed}
 .paper-choice .done{color:var(--good);font-weight:600;font-size:.85rem}
 .field{display:grid;gap:6px}
 .field label{font-weight:600}
@@ -247,9 +248,10 @@ function renderPapers(){
     const done = isDone(ex.id);
     const b = document.createElement("button");
     b.type = "button"; b.className = "paper-choice"; b.setAttribute("aria-pressed", chosen===ex.id ? "true":"false");
-    b.innerHTML = `<strong></strong><span class="muted">60 questions · 45 minutes</span>${done?`<span class="done">Submitted</span>`:''}`;
+    b.innerHTML = `<strong></strong><span class="muted">60 questions · 45 minutes</span>${done?`<span class="done">Submitted ✓</span>`:''}`;
     b.querySelector("strong").textContent = ex.title;
-    b.onclick = () => { chosen = ex.id; renderPapers(); };
+    if (done) { b.disabled = true; b.setAttribute("aria-disabled", "true"); }
+    b.onclick = () => { if (!done) { chosen = ex.id; renderPapers(); } };
     box.appendChild(b);
   });
   $("allDone").hidden = !allResults();
