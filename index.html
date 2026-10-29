@@ -143,11 +143,13 @@ button{cursor:pointer}
         <li>The paper has four sections: A – True or False, B – Multiple choice, C – Short answers, D – Matching.</li>
         <li>You have 45 MINUTES. When time runs out, your answers are submitted automatically.</li>
         <li>No reference material of any kind is allowed. Cheating leads to disqualification.</li>
-        <li>Sit BOTH papers on this same device. Your results are shown, and emailed to you, after you finish the second paper.</li>
+        <li>You will sit BOTH papers, one after the other. The second paper starts automatically when you submit the first.</li>
+        <li>Your results are not shown on screen. They are emailed to you as soon as you finish both papers.</li>
       </ul>
     </div>
+    <p class="send-status ok" id="allDone" hidden>You have completed both papers on this device. Your results were emailed to you.</p>
     <p class="note" id="startErr" hidden></p>
-    <div class="actions"><button class="btn" id="startBtn" type="submit">Start examination</button><button class="btn ghost" id="viewBtn" type="button" hidden>View my results</button></div>
+    <div class="actions"><button class="btn" id="startBtn" type="submit">Start examination</button></div>
   </form>
 </div>
 
@@ -177,37 +179,22 @@ button{cursor:pointer}
 
 <div class="wrap result" id="result" hidden>
   <div class="stack">
-    <span class="eyebrow" id="rTitle"></span>
-    <h1 id="rName"></h1>
-    <div class="score"><b id="rScore"></b><span class="muted" id="rOutOf">out of 120</span><span class="muted" id="rPct"></span></div>
-    <div class="stack" id="rPapers"></div>
-    <p class="note" id="rAuto"></p>
+    <span class="eyebrow">Master Guide Examinations 2026 · Completed</span>
+    <h1>Well done, <span id="rName"></span></h1>
+    <p>You have finished both papers. Your results are being emailed to <b id="rEmail"></b>. Check your inbox, and your Spam folder if you don’t see it within a few minutes.</p>
     <p class="send-status" data-send-status role="status" hidden></p>
+    <p class="note">You can now close this page.</p>
   </div>
-  <div class="stack">
-    <h2 id="waHead">Send your result to the instructor</h2>
-    <p class="note" id="waNote">Tap the button to open WhatsApp with your result written out, then choose the instructor’s chat and send it. If WhatsApp does not open, copy the result and paste it to the instructor.</p>
-    <div class="actions">
-      <a class="btn wa" id="waLink" href="#" target="_blank" rel="noopener">Send on WhatsApp</a>
-      <button class="btn ghost" id="copyBtn" type="button">Copy result</button>
-    </div>
-    <p class="note" id="copyMsg" hidden></p>
-    <div class="msg" id="rMsg"></div>
-  </div>
-  <div class="actions"><button class="btn ghost" id="homeBtn" type="button">Back to the paper list</button><button class="theme-btn" type="button" data-theme-toggle>Dark mode</button></div>
+  <div class="actions"><button class="theme-btn" type="button" data-theme-toggle>Dark mode</button></div>
 </div>
 
 <div class="wrap result" id="between" hidden>
   <div class="stack">
     <span class="eyebrow" id="bTitle"></span>
-    <h1>Paper submitted</h1>
+    <h1>Paper 1 of 2 submitted</h1>
     <p id="bText"></p>
     <p class="send-status" data-send-status role="status" hidden></p>
-    <div class="actions">
-      <button class="btn" id="nextBtn" type="button"></button>
-      <button class="btn ghost" id="laterBtn" type="button">I will do it later</button>
-    </div>
-    <p class="note">Use this same phone or computer for the second paper, so that your two results can be put together.</p>
+    <div class="actions"><button class="btn" id="nextBtn" type="button">Start now</button></div>
   </div>
   <div class="actions"><button class="theme-btn" type="button" data-theme-toggle>Dark mode</button></div>
 </div>
@@ -247,12 +234,12 @@ function renderPapers(){
     const done = store.get("done:"+ex.id);
     const b = document.createElement("button");
     b.type = "button"; b.className = "paper-choice"; b.setAttribute("aria-pressed", chosen===ex.id ? "true":"false");
-    b.innerHTML = `<strong></strong><span class="muted">60 questions · 45 minutes</span>${done?`<span class="done">${allResults()?"Submitted":"Submitted · results after both papers"}</span>`:''}`;
+    b.innerHTML = `<strong></strong><span class="muted">60 questions · 45 minutes</span>${done?`<span class="done">Submitted</span>`:''}`;
     b.querySelector("strong").textContent = ex.title;
     b.onclick = () => { chosen = ex.id; renderPapers(); };
     box.appendChild(b);
   });
-  $("viewBtn").hidden = !allResults();
+  $("allDone").hidden = !allResults();
 }
 function allResults(){
   const rs = EXAMS.map(x => store.get("result:"+x.id));
@@ -290,7 +277,7 @@ $("startForm").addEventListener("submit", e => {
   }
   if (store.get("done:"+chosen)){
     const other = EXAMS.find(x => !store.get("done:"+x.id));
-    err.textContent = "You have already submitted this paper on this device." + (other ? " Choose the " + other.title + "." : " Tap “View my results” to see your results.");
+    err.textContent = "You have already submitted this paper on this device." + (other ? " Choose the " + other.title + "." : " You have finished both papers, and your results were emailed to you.");
     err.hidden = false; return;
   }
   err.hidden = true;
@@ -420,60 +407,32 @@ function finish(timedOut){
   });
   window.scrollTo(0,0);
 }
+let countdown = null;
+function startPaper(exId){
+  clearInterval(countdown);
+  session = { exam: exId, name: session.name, church: session.church, email: session.email,
+    started: Date.now(), seed: Math.floor(Math.random()*100000)+1, answers: {} };
+  store.set("session:"+exId, session);
+  $("between").hidden = true; openExam();
+}
 function showBetween(ex, timedOut){
   const other = EXAMS.find(x => !store.get("done:"+x.id));
   $("exam").hidden = true; $("start").hidden = true; $("result").hidden = true; $("between").hidden = false;
   $("bTitle").textContent = ex.title + (timedOut ? " · Time is up, answers submitted" : " · Submitted");
-  $("bText").textContent = "Your answers for the " + ex.title + " have been saved. Your results will be shown here, and emailed to you, after you finish the " + other.title + ".";
-  $("nextBtn").textContent = "Start the " + other.title + " now";
-  $("nextBtn").onclick = () => {
-    session = { exam: other.id, name: session.name, church: session.church, email: session.email,
-      started: Date.now(), seed: Math.floor(Math.random()*100000)+1, answers: {} };
-    store.set("session:"+other.id, session);
-    $("between").hidden = true; openExam();
-  };
-  $("laterBtn").onclick = () => { $("between").hidden = true; $("start").hidden = false; chosen = other.id; renderPapers(); window.scrollTo(0,0); };
+  let left = 10;
+  const draw = () => { $("bText").textContent = "Your answers have been saved. The " + other.title + " starts automatically in " + left + " second" + (left===1?"":"s") + ". You will have 45 minutes."; };
+  draw();
+  $("nextBtn").onclick = () => startPaper(other.id);
+  clearInterval(countdown);
+  countdown = setInterval(() => { left--; if (left <= 0) startPaper(other.id); else draw(); }, 1000);
 }
 function showFinal(){
-  const results = allResults(), who = store.get("who") || {};
-  const grand = results.reduce((a,r)=>a+r.total,0), max = 60*results.length;
+  const who = store.get("who") || {};
   $("exam").hidden = true; $("start").hidden = true; $("between").hidden = true; $("result").hidden = false;
-  $("rTitle").textContent = "Master Guide Examinations 2026 · Your results";
-  $("rName").textContent = who.name || "";
-  $("rScore").textContent = grand;
-  $("rOutOf").textContent = "out of " + max;
-  $("rPct").textContent = Math.round(grand/max*100) + "%";
-  const box = $("rPapers"); box.innerHTML = "";
-  results.forEach(r => {
-    const d = document.createElement("div"); d.className = "paper-res";
-    d.innerHTML = `<div class="paper-res-head"><strong></strong><span></span></div><div class="breakdown"></div><span class="note"></span>`;
-    d.querySelector("strong").textContent = r.title;
-    d.querySelector(".paper-res-head span").textContent = r.total + "/60";
-    ["A · True/False","B · Multiple choice","C · Short answers","D · Matching"].forEach((l,i)=>{
-      const c=document.createElement("div"); c.innerHTML=`<span class="eyebrow"></span><span></span>`;
-      c.children[0].textContent=l; c.children[1].textContent=r.parts[i]+"/15"; d.querySelector(".breakdown").appendChild(c);
-    });
-    d.querySelector(".note").textContent = "Time used: " + r.minutes + " min" + (r.timedOut ? " (time ran out)" : "");
-    box.appendChild(d);
-  });
-  $("rAuto").textContent = "Short answers (Section C) are marked automatically from key words. The instructor checks them and may adjust your final mark.";
-  const msg = `Master Guide Examinations 2026\nName: ${who.name||""}\nChurch: ${who.church||""}\nEmail: ${who.email||"—"}\nTotal: ${grand}/${max}\n\n` +
-    results.map(r => `${r.title}: ${r.total}/60 (A ${r.parts[0]}/15, B ${r.parts[1]}/15, C ${r.parts[2]}/15, D ${r.parts[3]}/15) · ${r.minutes} min${r.timedOut?" (time ran out)":""}\nSection C answers: ${r.shortAnswers.map((a,i)=>`C${i+1}. ${a||"—"}`).join("; ")}`).join("\n\n");
-  $("rMsg").textContent = msg;
-  $("waHead").textContent = "Want a copy for yourself?";
-  $("waNote").textContent = "Your results go to the instructor automatically and are emailed to you. If you like, you can also copy them or send them on WhatsApp.";
-  $("waLink").href = "https://wa.me/?text=" + encodeURIComponent(msg);
-  $("copyBtn").onclick = () => {
-    const done = t => { $("copyMsg").textContent = t; $("copyMsg").hidden = false; };
-    navigator.clipboard.writeText(msg).then(()=>done("Results copied."), ()=>{
-      const r=document.createRange(); r.selectNodeContents($("rMsg")); const s=getSelection(); s.removeAllRanges(); s.addRange(r);
-      done("Your results are selected. Copy them to keep a record.");
-    });
-  };
+  $("rName").textContent = (who.name || "").split(" ")[0] || "candidate";
+  $("rEmail").textContent = who.email || "your email";
   window.scrollTo(0,0);
 }
-$("viewBtn").onclick = () => { statusMode = "final"; showFinal(); };
-$("homeBtn").onclick = () => { $("result").hidden = true; $("start").hidden = false; chosen = null; renderPapers(); window.scrollTo(0,0); };
 
 /* ── light / dark switch ── */
 const root = document.documentElement;
@@ -508,8 +467,8 @@ async function flushPending(showStatus){
   if (showStatus){
     if (left.length) setStatus("wait", "Your answers could not be sent yet because the connection failed. Keep this page open with internet on and it will retry.");
     else setStatus("ok", statusMode === "between"
-      ? "✓ Your answers have been sent to the instructor."
-      : "✓ Your results have been sent to the instructor, and a copy of both results is on its way to your email.");
+      ? "✓ Your answers for paper 1 have been sent to the instructor."
+      : "✓ Your answers have been sent, and your results email is on its way.");
   }
 }
 function queueResult(p){
