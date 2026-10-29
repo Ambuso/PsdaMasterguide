@@ -96,6 +96,11 @@ button{cursor:pointer}
 .msg{white-space:pre-wrap;font:.85rem/1.5 var(--f-mono);background:var(--paper);border:1px solid var(--rule);border-radius:8px;padding:12px;max-height:240px;overflow:auto;overflow-wrap:anywhere}
 .note{font-size:.9rem;color:var(--muted)}
 .wa{display:inline-block;text-decoration:none}
+.breakdown .eyebrow{text-transform:none;letter-spacing:0;font-size:.78rem;line-height:1.3}
+.paper-res{background:var(--paper);border:1px solid var(--rule);border-radius:10px;padding:14px 16px;display:grid;gap:10px}
+.paper-res-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.paper-res-head strong{font-family:var(--f-display);font-size:1.05rem}
+.paper-res-head span{font:600 1.05rem var(--f-mono);font-variant-numeric:tabular-nums}
 .send-status{margin:0;padding:12px 14px;border-radius:8px;font-weight:600;border:1px solid var(--rule);background:var(--paper)}
 .send-status.ok{color:var(--good);border-color:var(--good)}
 .send-status.wait{color:var(--warn);border-color:var(--warn);background:var(--warn-soft)}
@@ -138,11 +143,11 @@ button{cursor:pointer}
         <li>The paper has four sections: A – True or False, B – Multiple choice, C – Short answers, D – Matching.</li>
         <li>You have 45 MINUTES. When time runs out, your answers are submitted automatically.</li>
         <li>No reference material of any kind is allowed. Cheating leads to disqualification.</li>
-        <li>After you submit, your result goes to the instructor and a copy is emailed to you.</li>
+        <li>Sit BOTH papers on this same device. Your results are shown, and emailed to you, after you finish the second paper.</li>
       </ul>
     </div>
     <p class="note" id="startErr" hidden></p>
-    <div><button class="btn" id="startBtn" type="submit">Start examination</button></div>
+    <div class="actions"><button class="btn" id="startBtn" type="submit">Start examination</button><button class="btn ghost" id="viewBtn" type="button" hidden>View my results</button></div>
   </form>
 </div>
 
@@ -174,10 +179,10 @@ button{cursor:pointer}
   <div class="stack">
     <span class="eyebrow" id="rTitle"></span>
     <h1 id="rName"></h1>
-    <div class="score"><b id="rScore"></b><span class="muted">out of 60</span><span class="muted" id="rPct"></span></div>
-    <div class="breakdown" id="rBreak"></div>
+    <div class="score"><b id="rScore"></b><span class="muted" id="rOutOf">out of 120</span><span class="muted" id="rPct"></span></div>
+    <div class="stack" id="rPapers"></div>
     <p class="note" id="rAuto"></p>
-    <p class="send-status" id="sendStatus" role="status" hidden></p>
+    <p class="send-status" data-send-status role="status" hidden></p>
   </div>
   <div class="stack">
     <h2 id="waHead">Send your result to the instructor</h2>
@@ -190,6 +195,21 @@ button{cursor:pointer}
     <div class="msg" id="rMsg"></div>
   </div>
   <div class="actions"><button class="btn ghost" id="homeBtn" type="button">Back to the paper list</button><button class="theme-btn" type="button" data-theme-toggle>Dark mode</button></div>
+</div>
+
+<div class="wrap result" id="between" hidden>
+  <div class="stack">
+    <span class="eyebrow" id="bTitle"></span>
+    <h1>Paper submitted</h1>
+    <p id="bText"></p>
+    <p class="send-status" data-send-status role="status" hidden></p>
+    <div class="actions">
+      <button class="btn" id="nextBtn" type="button"></button>
+      <button class="btn ghost" id="laterBtn" type="button">I will do it later</button>
+    </div>
+    <p class="note">Use this same phone or computer for the second paper, so that your two results can be put together.</p>
+  </div>
+  <div class="actions"><button class="theme-btn" type="button" data-theme-toggle>Dark mode</button></div>
 </div>
 
 <script>
@@ -227,12 +247,23 @@ function renderPapers(){
     const done = store.get("done:"+ex.id);
     const b = document.createElement("button");
     b.type = "button"; b.className = "paper-choice"; b.setAttribute("aria-pressed", chosen===ex.id ? "true":"false");
-    b.innerHTML = `<strong></strong><span class="muted">60 questions · 45 minutes</span>${done?'<span class="done">Already submitted on this device</span>':''}`;
+    b.innerHTML = `<strong></strong><span class="muted">60 questions · 45 minutes</span>${done?`<span class="done">${allResults()?"Submitted":"Submitted · results after both papers"}</span>`:''}`;
     b.querySelector("strong").textContent = ex.title;
     b.onclick = () => { chosen = ex.id; renderPapers(); };
     box.appendChild(b);
   });
+  $("viewBtn").hidden = !allResults();
 }
+function allResults(){
+  const rs = EXAMS.map(x => store.get("result:"+x.id));
+  return rs.every(Boolean) ? rs : null;
+}
+(function prefill(){
+  const who = store.get("who"); if (!who) return;
+  if (who.name) $("cName").value = who.name;
+  if (who.email) $("cEmail").value = who.email;
+  if (who.church) $("cChurch").value = who.church;
+})();
 function fieldError(id, msg){
   const inp = $(id), el = $(id+"Err");
   inp.setAttribute("aria-invalid", msg ? "true" : "false");
@@ -257,7 +288,13 @@ $("startForm").addEventListener("submit", e => {
     if (first) $(first).focus();
     return;
   }
+  if (store.get("done:"+chosen)){
+    const other = EXAMS.find(x => !store.get("done:"+x.id));
+    err.textContent = "You have already submitted this paper on this device." + (other ? " Choose the " + other.title + "." : " Tap “View my results” to see your results.");
+    err.hidden = false; return;
+  }
   err.hidden = true;
+  store.set("who", { name, email, church });
   const prior = store.get("session:"+chosen);
   session = (prior && !prior.submitted && prior.name===name)
     ? Object.assign(prior, { email, church })
@@ -358,6 +395,7 @@ function mark(){
     return got;
   });
 }
+let statusMode = "final";
 function finish(timedOut){
   clearInterval(tick);
   const ex = EXAMS.find(x=>x.id===session.exam);
@@ -365,44 +403,77 @@ function finish(timedOut){
   const used = Math.min(45, Math.ceil((Date.now()-session.started)/60000));
   session.submitted = true; session.score = total; store.set("session:"+session.exam, session);
   store.set("done:"+session.exam, true);
-  const shortAns = ex.sections[2].items.map((it,idx)=>`C${idx+1}. ${(session.answers["2-"+idx]||"—").trim()}`).join("\n");
-  const when = new Date().toLocaleString("en-GB",{dateStyle:"medium",timeStyle:"short"});
-  const msg = `${ex.title}\nName: ${session.name}\nChurch: ${session.church}\nEmail: ${session.email||"—"}\nScore: ${total}/60 (A ${parts[0]}/15, B ${parts[1]}/15, C ${parts[2]}/15, D ${parts[3]}/15)\nSubmitted: ${when}${timedOut?" (time ran out)":""} · Time used: ${used} min\n\nSection C answers:\n${shortAns}`;
-  $("exam").hidden = true; $("result").hidden = false;
-  $("rTitle").textContent = ex.title + (timedOut ? " · Time is up, answers submitted" : " · Submitted");
-  $("rName").textContent = session.name;
-  $("rScore").textContent = total;
-  $("rPct").textContent = Math.round(total/60*100)+"%";
-  $("rBreak").innerHTML = "";
-  ["A · True/False","B · Multiple choice","C · Short answers","D · Matching"].forEach((l,i)=>{
-    const d=document.createElement("div"); d.innerHTML=`<span class="eyebrow"></span><span></span>`;
-    d.children[0].textContent=l; d.children[1].textContent=parts[i]+"/15"; $("rBreak").appendChild(d);
-  });
-  $("rAuto").textContent = "Short answers (Section C) are marked automatically from key words. The instructor checks them and may adjust your final mark.";
-  $("rMsg").textContent = msg;
+  const shortAnswers = ex.sections[2].items.map((it,idx)=>String(session.answers["2-"+idx]||"").trim());
+  store.set("result:"+ex.id, { id: ex.id, title: ex.title, total, parts, minutes: used, timedOut: !!timedOut,
+    when: new Date().toISOString(), shortAnswers });
+  store.set("who", { name: session.name, email: session.email, church: session.church });
+  const results = allResults();
   const allAnswers = ex.sections.map((sec,si)=>sec.items.map((it,idx)=>`${"ABCD"[si]}${idx+1}:${String(session.answers[`${si}-${idx}`]||"-").trim()}`).join(" ")).join(" | ");
-  const sent = queueResult({
+  statusMode = results ? "final" : "between";
+  if (results) showFinal(); else showBetween(ex, timedOut);
+  queueResult({
     attemptId: session.exam + "-" + session.started + "-" + session.seed,
     exam: ex.title, name: session.name, church: session.church, email: session.email || "", total, parts,
-    minutes: used, timedOut: !!timedOut,
-    shortAnswers: ex.sections[2].items.map((it,idx)=>String(session.answers["2-"+idx]||"").trim()),
-    allAnswers
+    minutes: used, timedOut: !!timedOut, shortAnswers, allAnswers,
+    final: !!results,
+    combined: results ? results.map(r => ({ exam: r.title, total: r.total, parts: r.parts, minutes: r.minutes, timedOut: r.timedOut })) : []
   });
-  if (sent){
-    $("waHead").textContent = "Want a copy for yourself?";
-    $("waNote").textContent = "Your result goes to the instructor automatically. If you like, you can also copy it or send it on WhatsApp.";
-  }
+  window.scrollTo(0,0);
+}
+function showBetween(ex, timedOut){
+  const other = EXAMS.find(x => !store.get("done:"+x.id));
+  $("exam").hidden = true; $("start").hidden = true; $("result").hidden = true; $("between").hidden = false;
+  $("bTitle").textContent = ex.title + (timedOut ? " · Time is up, answers submitted" : " · Submitted");
+  $("bText").textContent = "Your answers for the " + ex.title + " have been saved. Your results will be shown here, and emailed to you, after you finish the " + other.title + ".";
+  $("nextBtn").textContent = "Start the " + other.title + " now";
+  $("nextBtn").onclick = () => {
+    session = { exam: other.id, name: session.name, church: session.church, email: session.email,
+      started: Date.now(), seed: Math.floor(Math.random()*100000)+1, answers: {} };
+    store.set("session:"+other.id, session);
+    $("between").hidden = true; openExam();
+  };
+  $("laterBtn").onclick = () => { $("between").hidden = true; $("start").hidden = false; chosen = other.id; renderPapers(); window.scrollTo(0,0); };
+}
+function showFinal(){
+  const results = allResults(), who = store.get("who") || {};
+  const grand = results.reduce((a,r)=>a+r.total,0), max = 60*results.length;
+  $("exam").hidden = true; $("start").hidden = true; $("between").hidden = true; $("result").hidden = false;
+  $("rTitle").textContent = "Master Guide Examinations 2026 · Your results";
+  $("rName").textContent = who.name || "";
+  $("rScore").textContent = grand;
+  $("rOutOf").textContent = "out of " + max;
+  $("rPct").textContent = Math.round(grand/max*100) + "%";
+  const box = $("rPapers"); box.innerHTML = "";
+  results.forEach(r => {
+    const d = document.createElement("div"); d.className = "paper-res";
+    d.innerHTML = `<div class="paper-res-head"><strong></strong><span></span></div><div class="breakdown"></div><span class="note"></span>`;
+    d.querySelector("strong").textContent = r.title;
+    d.querySelector(".paper-res-head span").textContent = r.total + "/60";
+    ["A · True/False","B · Multiple choice","C · Short answers","D · Matching"].forEach((l,i)=>{
+      const c=document.createElement("div"); c.innerHTML=`<span class="eyebrow"></span><span></span>`;
+      c.children[0].textContent=l; c.children[1].textContent=r.parts[i]+"/15"; d.querySelector(".breakdown").appendChild(c);
+    });
+    d.querySelector(".note").textContent = "Time used: " + r.minutes + " min" + (r.timedOut ? " (time ran out)" : "");
+    box.appendChild(d);
+  });
+  $("rAuto").textContent = "Short answers (Section C) are marked automatically from key words. The instructor checks them and may adjust your final mark.";
+  const msg = `Master Guide Examinations 2026\nName: ${who.name||""}\nChurch: ${who.church||""}\nEmail: ${who.email||"—"}\nTotal: ${grand}/${max}\n\n` +
+    results.map(r => `${r.title}: ${r.total}/60 (A ${r.parts[0]}/15, B ${r.parts[1]}/15, C ${r.parts[2]}/15, D ${r.parts[3]}/15) · ${r.minutes} min${r.timedOut?" (time ran out)":""}\nSection C answers: ${r.shortAnswers.map((a,i)=>`C${i+1}. ${a||"—"}`).join("; ")}`).join("\n\n");
+  $("rMsg").textContent = msg;
+  $("waHead").textContent = "Want a copy for yourself?";
+  $("waNote").textContent = "Your results go to the instructor automatically and are emailed to you. If you like, you can also copy them or send them on WhatsApp.";
   $("waLink").href = "https://wa.me/?text=" + encodeURIComponent(msg);
   $("copyBtn").onclick = () => {
     const done = t => { $("copyMsg").textContent = t; $("copyMsg").hidden = false; };
-    navigator.clipboard.writeText(msg).then(()=>done("Result copied. Paste it into your message to the instructor."), ()=>{
+    navigator.clipboard.writeText(msg).then(()=>done("Results copied."), ()=>{
       const r=document.createRange(); r.selectNodeContents($("rMsg")); const s=getSelection(); s.removeAllRanges(); s.addRange(r);
-      done("Your result is selected. Copy it and paste it to the instructor.");
+      done("Your results are selected. Copy them to keep a record.");
     });
   };
   window.scrollTo(0,0);
 }
-$("homeBtn").onclick = () => { $("result").hidden = true; $("start").hidden = false; chosen = null; renderPapers(); };
+$("viewBtn").onclick = () => { statusMode = "final"; showFinal(); };
+$("homeBtn").onclick = () => { $("result").hidden = true; $("start").hidden = false; chosen = null; renderPapers(); window.scrollTo(0,0); };
 
 /* ── light / dark switch ── */
 const root = document.documentElement;
@@ -426,7 +497,7 @@ async function postResult(p){
     try { await fetch(RESULTS_URL, {method:"POST", mode:"no-cors", headers, body}); return true; } catch(e2){ return false; }
   }
 }
-function setStatus(kind, text){ const el=$("sendStatus"); if(!el) return; el.hidden=false; el.className="send-status "+kind; el.textContent=text; }
+function setStatus(kind, text){ document.querySelectorAll("[data-send-status]").forEach(el => { el.hidden=false; el.className="send-status "+kind; el.textContent=text; }); }
 async function flushPending(showStatus){
   if (!RESULTS_URL || RESULTS_URL.indexOf("http")!==0) return;
   let pending = store.get("pending") || [];
@@ -435,19 +506,22 @@ async function flushPending(showStatus){
   for (const p of pending){ if (!(await postResult(p))) left.push(p); }
   store.set("pending", left);
   if (showStatus){
-    if (left.length) setStatus("wait", "Your result could not be sent yet because the connection failed. Keep this page open with internet on and it will retry, or send it on WhatsApp below.");
-    else setStatus("ok", "✓ Your result has been sent to the instructor, and a copy is on its way to your email. You can close this page.");
+    if (left.length) setStatus("wait", "Your answers could not be sent yet because the connection failed. Keep this page open with internet on and it will retry.");
+    else setStatus("ok", statusMode === "between"
+      ? "✓ Your answers have been sent to the instructor."
+      : "✓ Your results have been sent to the instructor, and a copy of both results is on its way to your email.");
   }
 }
 function queueResult(p){
   if (!RESULTS_URL || RESULTS_URL.indexOf("http")!==0) return false;
   const pending = store.get("pending") || []; pending.push(p); store.set("pending", pending);
-  setStatus("wait", "Sending your result to the instructor…");
+  setStatus("wait", "Sending your answers to the instructor…");
   flushPending(true);
   return true;
 }
-window.addEventListener("online", () => flushPending(!$("result").hidden));
-setInterval(() => flushPending(!$("result").hidden), 30000);
+const onDone = () => !$("result").hidden || !$("between").hidden;
+window.addEventListener("online", () => flushPending(onDone()));
+setInterval(() => flushPending(onDone()), 30000);
 flushPending(false);
 
 renderPapers();
