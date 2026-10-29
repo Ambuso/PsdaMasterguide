@@ -400,7 +400,9 @@ function finish(timedOut){
   if (results) showFinal(); else showBetween(ex, timedOut);
   queueResult({
     attemptId: session.exam + "-" + session.started + "-" + session.seed,
-    exam: ex.title, name: session.name, church: session.church, email: session.email || "", total, parts,
+    exam: ex.title, name: session.name, church: session.church,
+    // The email address is only passed on with the LAST paper, so exactly one results email is sent.
+    email: results ? (session.email || "") : "", candidateEmail: session.email || "", total, parts,
     minutes: used, timedOut: !!timedOut, shortAnswers, allAnswers,
     final: !!results,
     combined: results ? results.map(r => ({ exam: r.title, total: r.total, parts: r.parts, minutes: r.minutes, timedOut: r.timedOut })) : []

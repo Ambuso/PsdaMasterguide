@@ -45,7 +45,7 @@ function doPost(e) {
     const clean = (v, max) => String(v == null ? "" : v).slice(0, max || 500).replace(/^[=+\-@]/, "'$&");
     const parts = toParts(r.parts);
     const total = Number(r.total) || 0;
-    const email = String(r.email || "").trim();
+    const email = String(r.email || r.candidateEmail || "").trim();
     const shortAns = (r.shortAnswers || []).slice(0, 15).map(v => clean(v));
     while (shortAns.length < 15) shortAns.push("");
 
