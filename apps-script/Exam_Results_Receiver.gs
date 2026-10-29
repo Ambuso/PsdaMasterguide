@@ -49,37 +49,47 @@ function doPost(e) {
     const shortAns = (r.shortAnswers || []).slice(0, 15).map(v => clean(v));
     while (shortAns.length < 15) shortAns.push("");
 
-    // Email only once the candidate has finished both papers.
-    let emailSent;
-    if (!SEND_EMAILS) {
-      emailSent = "Emails turned off";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      emailSent = "No email given";
-    } else if (r.final === false) {
-      emailSent = "Waits for second paper";
-    } else {
-      const papers = (r.combined && r.combined.length)
-        ? r.combined
-        : [{ exam: r.exam, total: total, parts: parts, minutes: r.minutes, timedOut: r.timedOut }];
-      try {
-        sendResultEmail(email, String(r.name || "Candidate"), papers);
-        emailSent = papers.length > 1 ? "Yes (both papers)" : "Yes";
-      } catch (mailErr) {
-        emailSent = "Failed: " + String(mailErr).slice(0, 120);
-      }
-    }
-
+    // Write the row first; the email decision is made from the sheet itself.
     sheet.appendRow([
       new Date(), clean(r.exam), clean(r.name), clean(r.church), clean(email),
       total, parts[0], parts[1], parts[2], parts[3],
-      Number(r.minutes) || 0, r.timedOut ? "Yes" : "No", emailSent
+      Number(r.minutes) || 0, r.timedOut ? "Yes" : "No", ""
     ].concat(shortAns, [clean(r.allAnswers, 2000), String(r.attemptId)]));
+    const thisRow = sheet.getLastRow();
+    sheet.getRange(thisRow, 13).setValue(decideEmail(sheet, email, String(r.name || "Candidate")));
 
     return reply({ ok: true });
   } catch (err) {
     return reply({ ok: false, error: String(err) });
   } finally {
     lock.releaseLock();
+  }
+}
+
+/**
+ * One email per candidate: only when BOTH papers are in the sheet under the same email address,
+ * and only if that candidate has not already been sent their combined results.
+ * This works whatever version of the exam page the candidate's phone is using.
+ */
+function decideEmail(sheet, email, name) {
+  if (!SEND_EMAILS) return "Emails turned off";
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return "No email given";
+  const rows = sheet.getRange(2, 1, sheet.getLastRow() - 1, 13).getValues();
+  const mine = rows.filter(row => String(row[4]).trim().toLowerCase() === email.toLowerCase());
+  if (mine.some(row => String(row[12]).indexOf("Yes (both") === 0)) return "Already emailed";
+  const latest = {};
+  mine.forEach(row => { latest[String(row[1])] = row; });   // latest row for each paper
+  const papers = Object.keys(latest).map(exam => {
+    const row = latest[exam];
+    return { exam: exam, total: row[5], parts: [row[6], row[7], row[8], row[9]], minutes: row[10], timedOut: row[11] === "Yes" };
+  });
+  if (papers.length < 2) return "Waits for second paper";
+  papers.sort((a, b) => a.exam < b.exam ? 1 : -1);   // Church Heritage first, then Bible Truths
+  try {
+    sendResultEmail(email, name, papers);
+    return "Yes (both papers)";
+  } catch (mailErr) {
+    return "Failed: " + String(mailErr).slice(0, 120);
   }
 }
 
