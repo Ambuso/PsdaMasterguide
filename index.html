@@ -211,6 +211,17 @@ const store = {
   del(k){ try { localStorage.removeItem(k); } catch(e){} }
 };
 let chosen = null, session = null, tick = null;
+const isDone = id => !!store.get("result:"+id);
+(function cleanDevice(){
+  try {
+    if (location.hash === "#reset") {
+      Object.keys(localStorage).forEach(k => { if (/^(done:|result:|session:|pending$|who$)/.test(k)) localStorage.removeItem(k); });
+      history.replaceState(null, "", location.pathname);
+    }
+  } catch(e){}
+  // Papers marked as submitted by older versions of the site, without a saved result, can be taken again.
+  EXAMS.forEach(ex => { if (store.get("done:"+ex.id) && !store.get("result:"+ex.id)) { store.del("done:"+ex.id); store.del("session:"+ex.id); } });
+})();
 
 function shuffled(arr, seed){
   const a = arr.map((v,i)=>i); let s = seed;
@@ -229,9 +240,11 @@ function shortCorrect(answer, groups){
 
 /* ── start screen ── */
 function renderPapers(){
+  const remaining = EXAMS.filter(x => !isDone(x.id));
+  if (remaining.length === 1 && (!chosen || isDone(chosen))) chosen = remaining[0].id;
   const box = $("papers"); box.innerHTML = "";
   EXAMS.forEach(ex => {
-    const done = store.get("done:"+ex.id);
+    const done = isDone(ex.id);
     const b = document.createElement("button");
     b.type = "button"; b.className = "paper-choice"; b.setAttribute("aria-pressed", chosen===ex.id ? "true":"false");
     b.innerHTML = `<strong></strong><span class="muted">60 questions · 45 minutes</span>${done?`<span class="done">Submitted</span>`:''}`;
@@ -275,8 +288,8 @@ $("startForm").addEventListener("submit", e => {
     if (first) $(first).focus();
     return;
   }
-  if (store.get("done:"+chosen)){
-    const other = EXAMS.find(x => !store.get("done:"+x.id));
+  if (isDone(chosen)){
+    const other = EXAMS.find(x => !isDone(x.id));
     err.textContent = "You have already submitted this paper on this device." + (other ? " Choose the " + other.title + "." : " You have finished both papers, and your results were emailed to you.");
     err.hidden = false; return;
   }
@@ -295,6 +308,7 @@ function openExam(){
   const ex = EXAMS.find(x=>x.id===session.exam);
   $("start").hidden = true; $("result").hidden = true; $("exam").hidden = false;
   $("barTitle").textContent = ex.title;
+  $("confirm").hidden = true;
   const wrap = $("sections"); wrap.innerHTML = "";
   ex.sections.forEach((s, si) => {
     const sec = document.createElement("section"); sec.className = "section";
@@ -418,7 +432,8 @@ function startPaper(exId){
   $("between").hidden = true; openExam();
 }
 function showBetween(ex, timedOut){
-  const other = EXAMS.find(x => !store.get("done:"+x.id));
+  const other = EXAMS.find(x => !isDone(x.id));
+  if (!other) { statusMode = "final"; showFinal(); return; }
   $("exam").hidden = true; $("start").hidden = true; $("result").hidden = true; $("between").hidden = false;
   $("bTitle").textContent = ex.title + (timedOut ? " · Time is up, answers submitted" : " · Submitted");
   let left = 10;
