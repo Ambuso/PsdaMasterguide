@@ -264,6 +264,59 @@ function writeSummary_(people, props) {
   tab.autoResizeColumns(1, head.length);
 }
 
+/* ════════════════════════════════════════════════════════════════════
+ * SECTION C RE-MARKING (checked by hand)
+ * Select applyMarkCorrections → Run. It adds the marks below to Section C (column I),
+ * updates the score (column F) and leaves a note on each changed cell explaining why.
+ * Running it twice does nothing extra. Run it BEFORE sendAllResults.
+ * ════════════════════════════════════════════════════════════════════ */
+// Your call: in Church Heritage C15 (Revelation 14:12) these four wrote "testimony of Jesus"
+// (which is Revelation 12:17) instead of "faith of Jesus". Set to true to give them the mark.
+const ACCEPT_TESTIMONY_FOR_CH_C15 = false;
+
+const MARK_CORRECTIONS = [
+  { id: "ch-1793294221805-43442", add: 1, why: "Jackson Mwamba, CH C2: 'Warldeness' = Waldenses (spelling)" },
+  { id: "ch-1793294277791-6580",  add: 2, why: "Abigael Chelangat, CH C5: 'sign of times' = Signs of the Times; C11: 'Swizerland' = Switzerland (spelling)" },
+  { id: "bt-1793296240194-66424", add: 2, why: "Alice Nyanduko, BT C4: 'Spirit of prophesy' (spelling); C15: commandments + spirit of prophecy (= testimony of Jesus)" },
+  { id: "bt-1793299899490-30996", add: 3, why: "Filgona Noreen, BT C4: 'SOP' = Spirit of Prophecy; C5: scapegoat + sacrificed goat; C15: SOP + commandments" },
+  { id: "bt-1793299206596-69041", add: 1, why: "Gladys Kebaya, BT C5: 'the sin offering and the scapegoat' (the Lord's goat was the sin offering)" },
+  { id: "bt-1793301180504-35466", add: 1, why: "Palmer Osuri, BT C5: 'Goat and scapegoat'" },
+  { id: "bt-1793294368237-25176", add: 1, why: "Dickson Onyango, BT C8: 'Mass/ population' = peoples" },
+  { id: "bt-1793295243109-39154", add: 1, why: "Cecilia Volenzo, BT C9: 'Biblios' = biblos (spelling)" }
+];
+const TESTIMONY_CORRECTIONS = [
+  { id: "ch-1793294319447-70583", add: 1, why: "Lucy Ndiao, CH C15: 'testimony of Jesus' accepted" },
+  { id: "ch-1793294280811-81220", add: 1, why: "Cecilia Volenzo, CH C15: 'testimony of Jesus' accepted" },
+  { id: "ch-1793294221805-43442", add: 1, why: "Jackson Mwamba, CH C15: 'testimony of Jesus' accepted", key: "ch-1793294221805-43442#c15" },
+  { id: "ch-1793295047371-12830", add: 1, why: "Osoro Nyambane, CH C15: 'testimony of Jesus' accepted" }
+];
+
+function applyMarkCorrections() {
+  const sheet = SpreadsheetApp.openById(SHEET_ID).getSheets()[0];
+  const props = PropertiesService.getScriptProperties();
+  const last = sheet.getLastRow();
+  const ids = sheet.getRange(2, HEADERS.length, last - 1, 1).getValues().map(r => String(r[0]));
+  const list = MARK_CORRECTIONS.concat(ACCEPT_TESTIMONY_FOR_CH_C15 ? TESTIMONY_CORRECTIONS : []);
+  let done = 0;
+  list.forEach(c => {
+    const key = "corr:" + (c.key || c.id);
+    if (props.getProperty(key)) { Logger.log("Already applied: " + c.why); return; }
+    const i = ids.indexOf(c.id);
+    if (i === -1) { Logger.log("Row not found: " + c.why); return; }
+    const row = i + 2;
+    const secs = sheet.getRange(row, 7, 1, 4).getValues()[0].map(n => Number(n) || 0);   // G..J
+    secs[2] = Math.min(15, secs[2] + c.add);                                               // I = Section C
+    sheet.getRange(row, 9).setValue(secs[2]);
+    sheet.getRange(row, 6).setValue(secs.reduce((a, b) => a + b, 0));                      // F = score /60
+    const cell = sheet.getRange(row, 9);
+    cell.setNote((cell.getNote() ? cell.getNote() + "\n" : "") + "+" + c.add + " " + c.why);
+    props.setProperty(key, new Date().toISOString());
+    done++;
+    Logger.log("Applied +" + c.add + ": " + c.why);
+  });
+  Logger.log(done + " correction(s) applied. Now run previewAllResults, then sendAllResults.");
+}
+
 function doGet() {
   return reply({ ok: true, message: "Master Guide results receiver is running." });
 }
