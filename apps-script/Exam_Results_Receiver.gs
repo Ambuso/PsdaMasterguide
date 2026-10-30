@@ -15,6 +15,11 @@ const INSTRUCTOR = "Ambuso Dismas";
 const SEND_EMAILS = true;   // set to false to stop emailing candidates
 const FOOTNOTE = "How can I lose when I came here with nothing?";   // shown at the bottom of every results email
 
+// ── Settings for "Send all results" (sendAllResults) ──
+const EXAM_NAMES = ["Church Heritage Examination 2026", "Bible Truths Examination 2026"];
+const RESULTS_NOTE = "These are your results for the Master Guide Examinations 2026.";   // shown in the "send all" emails
+const SKIP_EMAILS = [];   // addresses that should NOT get an email, e.g. ["dismasmik3@gmail.com"] for your own test attempts
+
 const HEADERS = ["Submitted at", "Examination", "Full name", "Local church", "Email",
   "Score /60", "A True/False /15", "B Multiple choice /15", "C Short answers /15", "D Matching /15",
   "Minutes used", "Time ran out", "Email sent",
@@ -100,7 +105,8 @@ function toParts(p) {
 }
 
 /** Sends one email listing every paper in `papers` (each: exam, total, parts, minutes, timedOut). */
-function sendResultEmail(email, name, papers) {
+function sendResultEmail(email, name, papers, opts) {
+  opts = opts || {};
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const labels = ["A · True or False", "B · Multiple choice", "C · Short answers", "D · Matching"];
   const list = papers.map(p => ({
@@ -111,10 +117,13 @@ function sendResultEmail(email, name, papers) {
   const max = 60 * list.length;
   const pct = Math.round(grand / max * 100);
   const both = list.length > 1;
-  const subject = both ? "Your results: Master Guide Examinations 2026" : "Your results: " + list[0].exam;
+  const subject = (both || opts.note) ? "Your results: Master Guide Examinations 2026" : "Your results: " + list[0].exam;
   const intro = both ? "Here are your results for the Master Guide Examinations 2026."
                      : "Here are your results for the " + list[0].exam + ".";
-  const note = "Short answers in Section C were marked automatically from key words. Your instructor will check them, so your final mark may change slightly.";
+  const note = opts.note || "Short answers in Section C were marked automatically from key words. Your instructor will check them, so your final mark may change slightly.";
+  const missing = (opts.missing || []).length
+    ? "You have not yet sat the " + opts.missing.join(" or the ") + ". Please speak to your instructor." : "";
+  const named = both || !!missing;
 
   const text =
     "Dear " + name + ",\n\n" + intro + "\n\n" +
@@ -123,7 +132,7 @@ function sendResultEmail(email, name, papers) {
       p.exam + ": " + p.total + "/60 (" + Math.round(p.total / 60 * 100) + "%)\n" +
       labels.map((l, i) => "  " + l + ": " + p.parts[i] + "/15").join("\n") + "\n" +
       "  Time used: " + p.minutes + " minutes" + (p.timedOut ? " (time ran out)" : "")
-    ).join("\n\n") + "\n\n" + note + "\n\n" +
+    ).join("\n\n") + "\n\n" + (missing ? missing + "\n\n" : "") + note + "\n\n" +
     "God bless you,\n" + INSTRUCTOR + "\nInstructor, Master Guide class\n\n——\n" + FOOTNOTE;
 
   const cell = 'padding:6px 8px;border-bottom:1px solid #d9e0e7';
@@ -134,7 +143,7 @@ function sendResultEmail(email, name, papers) {
     (both ? '<p style="font-size:28px;margin:12px 0"><b>' + grand + "</b> / " + max +
       ' <span style="color:#5b6774;font-size:16px">(' + pct + "%)</span></p>" : "") +
     list.map(p =>
-      '<p style="margin:20px 0 6px;font-size:' + (both ? "16px" : "28px") + '"><b>' + (both ? esc(p.exam) + " · " : "") + p.total + "</b> / 60" +
+      '<p style="margin:20px 0 6px;font-size:' + (named ? "16px" : "28px") + '"><b>' + (named ? esc(p.exam) + " · " : "") + p.total + "</b> / 60" +
       ' <span style="color:#5b6774;font-size:14px">(' + Math.round(p.total / 60 * 100) + "%)</span></p>" +
       '<table style="border-collapse:collapse;width:100%">' +
       labels.map((l, i) => '<tr><td style="' + cell + '">' + l + '</td><td style="' + cell + ';text-align:right"><b>' +
@@ -142,7 +151,8 @@ function sendResultEmail(email, name, papers) {
       "</table>" +
       '<p style="color:#5b6774;margin:6px 0 0">Time used: ' + p.minutes + " minutes" + (p.timedOut ? " (time ran out)" : "") + "</p>"
     ).join("") +
-    '<p style="color:#5b6774;margin-top:18px">' + note + "</p>" +
+    (missing ? '<p style="margin-top:18px"><b>' + esc(missing) + "</b></p>" : "") +
+    '<p style="color:#5b6774;margin-top:18px">' + esc(note) + "</p>" +
     "<p>God bless you,<br>" + esc(INSTRUCTOR) + "<br>Instructor, Master Guide class</p>" +
     '<p style="margin-top:24px;padding-top:12px;border-top:1px solid #d9e0e7;color:#5b6774;font-size:13px;font-style:italic">' + esc(FOOTNOTE) + "</p></div>";
 
@@ -155,6 +165,103 @@ function testEmail() {
     { exam: "Church Heritage Examination 2026", total: 50, parts: [13, 12, 11, 14], minutes: 38, timedOut: false },
     { exam: "Bible Truths Examination 2026", total: 46, parts: [12, 13, 9, 12], minutes: 41, timedOut: false }
   ]);
+}
+
+/* ════════════════════════════════════════════════════════════════════
+ * SEND ALL RESULTS
+ *  1. Select previewAllResults → Run. Check the Execution log and the new "Summary" tab.
+ *  2. Select sendAllResults → Run. Each person gets ONE email with their latest result for each paper.
+ *     People already sent their results are skipped, so it is safe to run again later
+ *     (for example after more people finish, or if the daily email limit was reached).
+ *  3. To correct a mark first, change the section score (columns G–J) in that person's latest row.
+ *     The total is worked out from the four sections.
+ *  To send everyone a fresh copy after changing marks, run resetSentList, then sendAllResults.
+ * ════════════════════════════════════════════════════════════════════ */
+function previewAllResults() {
+  const props = PropertiesService.getScriptProperties();
+  const people = collectCandidates_();
+  writeSummary_(people, props);
+  people.forEach(c => {
+    const done = EXAM_NAMES.filter(n => c.papers[n]);
+    Logger.log((props.getProperty("final:" + c.email) ? "ALREADY SENT  " : "WILL SEND     ") +
+      c.name + " <" + c.email + "> · " + done.map(n => n.split(" Examination")[0] + " " + c.papers[n].total + "/60").join(", ") +
+      (done.length < EXAM_NAMES.length ? " · missing " + EXAM_NAMES.filter(n => !c.papers[n]).join(", ") : ""));
+  });
+  Logger.log(people.length + " people. Emails left today: " + MailApp.getRemainingDailyQuota());
+}
+
+function sendAllResults() {
+  const props = PropertiesService.getScriptProperties();
+  const people = collectCandidates_();
+  let sent = 0, skipped = 0, stopped = false;
+  for (const c of people) {
+    if (props.getProperty("final:" + c.email)) { skipped++; continue; }
+    if (MailApp.getRemainingDailyQuota() < 1) { stopped = true; break; }
+    const papers = EXAM_NAMES.filter(n => c.papers[n]).map(n => c.papers[n]);
+    const missing = EXAM_NAMES.filter(n => !c.papers[n]);
+    try {
+      sendResultEmail(c.email, c.name, papers, { note: RESULTS_NOTE, missing: missing });
+      props.setProperty("final:" + c.email, new Date().toISOString());
+      sent++;
+      Logger.log("Sent to " + c.name + " <" + c.email + ">");
+    } catch (err) {
+      Logger.log("FAILED for " + c.email + ": " + err);
+    }
+  }
+  writeSummary_(people, props);
+  Logger.log("Done. Sent: " + sent + ". Already sent before: " + skipped + "." +
+    (stopped ? " Stopped because today's email limit was reached. Run sendAllResults again tomorrow to finish." : ""));
+}
+
+/** Clears the record of who has been sent their results, so sendAllResults sends to everyone again. */
+function resetSentList() {
+  const props = PropertiesService.getScriptProperties();
+  Object.keys(props.getProperties()).forEach(k => { if (k.indexOf("final:") === 0) props.deleteProperty(k); });
+  Logger.log("Cleared. The next sendAllResults will email everyone.");
+}
+
+/** One entry per email address, using each person's LATEST attempt at each paper. */
+function collectCandidates_() {
+  const sheet = SpreadsheetApp.openById(SHEET_ID).getSheets()[0];
+  const last = sheet.getLastRow();
+  if (last < 2) return [];
+  const skip = SKIP_EMAILS.map(e => String(e).trim().toLowerCase());
+  const nice = n => (n === n.toUpperCase() ? n.toLowerCase().replace(/\b\w/g, ch => ch.toUpperCase()) : n);
+  const byEmail = {};
+  sheet.getRange(2, 1, last - 1, 13).getValues().forEach(row => {
+    const email = String(row[4]).trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || skip.indexOf(email) !== -1) return;
+    const exam = String(row[1]).trim();
+    if (EXAM_NAMES.indexOf(exam) === -1) return;
+    const c = byEmail[email] || (byEmail[email] = { email: email, name: "", church: "", papers: {} });
+    if (String(row[2]).trim()) c.name = nice(String(row[2]).trim());
+    if (String(row[3]).trim()) c.church = String(row[3]).trim();
+    const parts = [row[6], row[7], row[8], row[9]].map(n => Number(n) || 0);
+    c.papers[exam] = { exam: exam, parts: parts, total: parts.reduce((a, b) => a + b, 0),
+                       minutes: Number(row[10]) || 0, timedOut: row[11] === "Yes" };
+  });
+  return Object.keys(byEmail).map(k => byEmail[k]).sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/** Writes a "Summary" tab: one row per person with both scores and the total. */
+function writeSummary_(people, props) {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  const tab = ss.getSheetByName("Summary") || ss.insertSheet("Summary");
+  tab.clear();
+  const head = ["Full name", "Email", "Local church"].concat(EXAM_NAMES.map(n => n.replace(" Examination 2026", "") + " /60"),
+    ["Total /" + 60 * EXAM_NAMES.length, "Papers done", "Results emailed"]);
+  const rows = people.map(c => {
+    const scores = EXAM_NAMES.map(n => c.papers[n] ? c.papers[n].total : "");
+    const sentAt = props.getProperty("final:" + c.email);
+    return [c.name, c.email, c.church].concat(scores, [
+      scores.reduce((a, b) => a + (Number(b) || 0), 0),
+      EXAM_NAMES.filter(n => c.papers[n]).length + " of " + EXAM_NAMES.length,
+      sentAt ? new Date(sentAt) : ""]);
+  });
+  tab.getRange(1, 1, 1, head.length).setValues([head]).setFontWeight("bold");
+  if (rows.length) tab.getRange(2, 1, rows.length, head.length).setValues(rows);
+  tab.setFrozenRows(1);
+  tab.autoResizeColumns(1, head.length);
 }
 
 function doGet() {
