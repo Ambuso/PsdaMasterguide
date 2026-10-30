@@ -17,8 +17,8 @@ const FOOTNOTE = "How can I lose when I came here with nothing?";   // shown at 
 
 // ── Settings for "Send all results" (sendAllResults) ──
 const EXAM_NAMES = ["Church Heritage Examination 2026", "Bible Truths Examination 2026"];
-const RESULTS_NOTE = "These are your results for the Master Guide Examinations 2026.";   // shown in the "send all" emails
-const SKIP_EMAILS = [];   // addresses that should NOT get an email, e.g. ["dismasmik3@gmail.com"] for your own test attempts
+const RESULTS_NOTE = "I went through the short answers (Section C) again and added marks where the answer was right but the spelling or wording was different. These are your final scores.";   // shown in the "send all" emails
+const SKIP_EMAILS = ["dismasmik3@gmail.com", "dismas@firesidefoundation.org"];   // addresses that should NOT get an email, e.g. ["dismasmik3@gmail.com"] for your own test attempts
 
 const HEADERS = ["Submitted at", "Examination", "Full name", "Local church", "Email",
   "Score /60", "A True/False /15", "B Multiple choice /15", "C Short answers /15", "D Matching /15",
@@ -117,8 +117,9 @@ function sendResultEmail(email, name, papers, opts) {
   const max = 60 * list.length;
   const pct = Math.round(grand / max * 100);
   const both = list.length > 1;
-  const subject = (both || opts.note) ? "Your results: Master Guide Examinations 2026" : "Your results: " + list[0].exam;
-  const intro = both ? "Here are your results for the Master Guide Examinations 2026."
+  const subject = opts.subject || ((both || opts.note) ? "Your results: Master Guide Examinations 2026" : "Your results: " + list[0].exam);
+  const intro = opts.subject ? "Here are your updated results for the Master Guide Examinations 2026."
+              : both ? "Here are your results for the Master Guide Examinations 2026."
                      : "Here are your results for the " + list[0].exam + ".";
   const note = opts.note || "Short answers in Section C were marked automatically from key words. Your instructor will check them, so your final mark may change slightly.";
   const missing = (opts.missing || []).length
@@ -200,7 +201,8 @@ function sendAllResults() {
     const papers = EXAM_NAMES.filter(n => c.papers[n]).map(n => c.papers[n]);
     const missing = EXAM_NAMES.filter(n => !c.papers[n]);
     try {
-      sendResultEmail(c.email, c.name, papers, { note: RESULTS_NOTE, missing: missing });
+      sendResultEmail(c.email, c.name, papers, { note: RESULTS_NOTE, missing: missing,
+        subject: "Your updated results: Master Guide Examinations 2026" });
       props.setProperty("final:" + c.email, new Date().toISOString());
       sent++;
       Logger.log("Sent to " + c.name + " <" + c.email + ">");
@@ -278,7 +280,6 @@ const MARK_CORRECTIONS = [
   { id: "ch-1793294221805-43442", add: 1, why: "Jackson Mwamba, CH C2: 'Warldeness' = Waldenses (spelling)" },
   { id: "ch-1793294277791-6580",  add: 2, why: "Abigael Chelangat, CH C5: 'sign of times' = Signs of the Times; C11: 'Swizerland' = Switzerland (spelling)" },
   { id: "bt-1793296240194-66424", add: 2, why: "Alice Nyanduko, BT C4: 'Spirit of prophesy' (spelling); C15: commandments + spirit of prophecy (= testimony of Jesus)" },
-  { id: "bt-1793299899490-30996", add: 3, why: "Filgona Noreen, BT C4: 'SOP' = Spirit of Prophecy; C5: scapegoat + sacrificed goat; C15: SOP + commandments" },
   { id: "bt-1793299206596-69041", add: 1, why: "Gladys Kebaya, BT C5: 'the sin offering and the scapegoat' (the Lord's goat was the sin offering)" },
   { id: "bt-1793301180504-35466", add: 1, why: "Palmer Osuri, BT C5: 'Goat and scapegoat'" },
   { id: "bt-1793294368237-25176", add: 1, why: "Dickson Onyango, BT C8: 'Mass/ population' = peoples" },
